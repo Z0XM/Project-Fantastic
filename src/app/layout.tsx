@@ -6,6 +6,7 @@ import { SidebarInset, SidebarProvider, SidebarTrigger } from '@/components/ui/s
 import { AppSidebar } from '@/components/sidebar/app-sidebar';
 import { Separator } from '@/components/ui/separator';
 import Navigator from '@/components/navigator';
+import { CommandMenu } from '@/components/command-menu';
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -41,6 +42,7 @@ export default function RootLayout({
                 <SidebarTrigger />
               </div>
             </header>
+            <CommandMenu />
             {children}
           </SidebarInset>
         </SidebarProvider>
