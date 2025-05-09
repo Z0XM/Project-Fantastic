@@ -18,6 +18,7 @@ model Business {
     businessEvents         BusinessEvents[]
     rounds                 Rounds[]
     warrantAndOptionShares WarrantAndOptionShares[]
+    stakeholders           Stakeholders[]
 }
 
 // Defines different types of funding or investment rounds a business can have
@@ -64,9 +65,12 @@ model BusinessEvents {
 
     round    Rounds   @relation(fields: [roundId], references: [id])
     business Business @relation(fields: [businessId], references: [id])
+
+    @@unique([businessId, roundId])
 }
 
 enum StakeholderType {
+    FOUNDING_TEAM
     FRIENDS_N_FAMILY
     VENTURE_CAPITALIST
     ANGEL_INVESTOR
@@ -79,18 +83,32 @@ enum StakeholderType {
     EMPLOYEE
 }
 
+model Users {
+    id        String   @id @default(uuid())
+    name      String   @unique
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    asStakeholder Stakeholders[]
+}
+
 // Represents investors or shareholders in the business
 model Stakeholders {
-    id        String          @id @default(uuid())
-    name      String
-    type      StakeholderType
-    createdAt DateTime        @default(now())
-    updatedAt DateTime        @updatedAt
-    config    Json?
+    id         String          @id @default(uuid())
+    createdAt  DateTime        @default(now())
+    updatedAt  DateTime        @updatedAt
+    userId     String
+    businessId String
+    type       StakeholderType
+    config     Json?
 
+    user                   Users                    @relation(fields: [userId], references: [id])
+    business               Business                 @relation(fields: [businessId], references: [id])
     stakeholderEvents      StakeholderEvents[]
     investments            Investments[]
     warrantandOptionShares WarrantAndOptionShares[]
+
+    @@unique([userId, businessId])
 }
 
 enum ShareType {
@@ -149,6 +167,8 @@ model WarrantAndOptionShares {
     round       Rounds       @relation(fields: [roundId], references: [id])
     stakeholder Stakeholders @relation(fields: [stakeholderId], references: [id])
     business    Business     @relation(fields: [businessId], references: [id])
+
+    @@unique([roundId, stakeholderId])
 }
 
 enum ContractDataType {
@@ -168,6 +188,8 @@ model Investments {
     stakeholder Stakeholders @relation(fields: [stakeholderId], references: [id])
     round       Rounds       @relation(fields: [roundId], references: [id])
     contracts   Contracts[]
+
+    @@unique([stakeholderId, roundId])
 }
 
 // Stores legal documents and contracts associated with investments
