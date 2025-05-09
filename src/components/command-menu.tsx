@@ -1,18 +1,32 @@
 'use client';
 
 import {
-  Command,
   CommandDialog,
   CommandEmpty,
   CommandGroup,
   CommandInput,
   CommandItem,
   CommandList,
-  CommandSeparator,
-  CommandShortcut,
 } from '@/components/ui/command';
 import { useEffect, useState } from 'react';
 
+/**
+ * A command menu component that provides a searchable command palette interface.
+ * Can be opened with Cmd/Ctrl + K keyboard shortcut.
+ *
+ * @component
+ * @example
+ * ```tsx
+ * <CommandMenu />
+ * ```
+ *
+ * @returns A command dialog interface with search input and suggested commands
+ *
+ * @remarks
+ * The component uses a keyboard shortcut listener (Cmd/Ctrl + K) to toggle visibility.
+ * Contains a searchable input field and a list of command suggestions.
+ * When no results match the search, displays "No results found."
+ */
 export function CommandMenu() {
   const [open, setOpen] = useState(false);
 

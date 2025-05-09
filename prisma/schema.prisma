@@ -5,10 +5,189 @@ datasource db {
 
 generator client {
     provider = "prisma-client-js"
-    output   = "./generated"
+    output   = "../node_modules/.prisma/client"
 }
 
-model User {
-    id   String  @id @default(uuid())
-    name String?
+// Represents a business entity with its basic information and relationships
+model Business {
+    id        String   @id @default(uuid())
+    name      String   @unique
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    businessEvents         BusinessEvents[]
+    rounds                 Rounds[]
+    warrantAndOptionShares WarrantAndOptionShares[]
+}
+
+// Defines different types of funding or investment rounds a business can have
+enum RoundType {
+    BOOTSTRAP
+    SEED
+    SERIES_A
+    SERIES_B
+    SERIES_C
+    SERIES_N
+    BRIDGE
+    IPO
+    CROWDFUNDING
+    CONVERTIBLE_NOTE
+    SAFE
+    VENTURE_DEBT
+    WARRANT_OPTION
+}
+
+// Represents funding rounds with their type and associated events
+model Rounds {
+    id         String    @id @default(uuid())
+    name       String
+    type       RoundType
+    createdAt  DateTime  @default(now())
+    businessId String
+    business   Business  @relation(fields: [businessId], references: [id])
+
+    businessEvents         BusinessEvents?
+    StakeholderEvents      StakeholderEvents[]
+    investments            Investments[]
+    WarrantAndOptionShares WarrantAndOptionShares[]
+}
+
+// Tracks business valuation and share information for each funding round
+model BusinessEvents {
+    id            String   @id @default(uuid())
+    businessId    String
+    roundId       String   @unique
+    totalShares   Int
+    balanceShares Int
+    valuation     Decimal
+    createdAt     DateTime @default(now())
+
+    round    Rounds   @relation(fields: [roundId], references: [id])
+    business Business @relation(fields: [businessId], references: [id])
+}
+
+enum StakeholderType {
+    FRIENDS_N_FAMILY
+    VENTURE_CAPITALIST
+    ANGEL_INVESTOR
+    PRIVATE_EQUITY
+    CORPORATE_INVESTOR
+    CROWDFUNDING
+    BANK
+    GOVERNMENT
+    OTHER
+    EMPLOYEE
+}
+
+// Represents investors or shareholders in the business
+model Stakeholders {
+    id        String          @id @default(uuid())
+    name      String
+    type      StakeholderType
+    createdAt DateTime        @default(now())
+    updatedAt DateTime        @updatedAt
+    config    Json?
+
+    stakeholderEvents      StakeholderEvents[]
+    investments            Investments[]
+    warrantandOptionShares WarrantAndOptionShares[]
+}
+
+enum ShareType {
+    COMMON
+    PREFERRED
+    RESTRICTED
+    WARRANT
+    OPTION
+}
+
+enum ShareAllocationType {
+    ACTUAL_PRICE
+    CONTRACT_PRICE
+}
+
+enum EventType {
+    INVESTMENT
+    OPTION
+    WARRANT
+    CONVERTIBLE_NOTE
+    SAFE
+}
+
+// Records share allocation events for stakeholders in specific rounds
+model StakeholderEvents {
+    id                  String              @id @default(uuid())
+    shares              Int
+    createdAt           DateTime            @default(now())
+    stakeholderId       String
+    roundId             String
+    eventType           EventType
+    shareType           ShareType
+    shareAllocationType ShareAllocationType
+    pricePerShare       Decimal
+    contractId          String?
+    contract            Contracts?          @relation(fields: [contractId], references: [id])
+
+    stakeholder Stakeholders @relation(fields: [stakeholderId], references: [id])
+    round       Rounds       @relation(fields: [roundId], references: [id])
+
+    @@unique([stakeholderId, roundId])
+}
+
+// Manages warrant and option shares allocated to stakeholders
+model WarrantAndOptionShares {
+    id            String    @id @default(uuid())
+    createdAt     DateTime  @default(now())
+    shares        Int
+    shareType     ShareType
+    pricePerShare Decimal
+    stakeholderId String
+    businessId    String
+    config        Json?
+    roundId       String
+
+    round       Rounds       @relation(fields: [roundId], references: [id])
+    stakeholder Stakeholders @relation(fields: [stakeholderId], references: [id])
+    business    Business     @relation(fields: [businessId], references: [id])
+}
+
+enum ContractDataType {
+    NONE
+    URL
+    JSON
+}
+
+// Tracks monetary investments made by stakeholders in specific rounds
+model Investments {
+    id            String   @id @default(uuid())
+    amount        Decimal
+    createdAt     DateTime @default(now())
+    stakeholderId String
+    roundId       String
+
+    stakeholder Stakeholders @relation(fields: [stakeholderId], references: [id])
+    round       Rounds       @relation(fields: [roundId], references: [id])
+    contracts   Contracts[]
+}
+
+// Stores legal documents and contracts associated with investments
+model Contracts {
+    id           String           @id @default(uuid())
+    createdAt    DateTime         @default(now())
+    dataType     ContractDataType
+    status       GlobalStates
+    contractUrl  String?          @db.Text
+    contractJson Json?
+    investmentId String
+
+    investment        Investments         @relation(fields: [investmentId], references: [id])
+    stakeHolderEvents StakeholderEvents[]
+}
+
+enum GlobalStates {
+    DRAFT
+    PENDING
+    APPROVED
+    REJECTED
+    COMPLETED
 }
