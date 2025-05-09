@@ -10,25 +10,11 @@ import {
 } from '@/components/ui/command';
 import { useEffect, useState } from 'react';
 
-/**
- * A command menu component that provides a searchable command palette interface.
- * Can be opened with Cmd/Ctrl + K keyboard shortcut.
- *
- * @component
- * @example
- * ```tsx
- * <CommandMenu />
- * ```
- *
- * @returns A command dialog interface with search input and suggested commands
- *
- * @remarks
- * The component uses a keyboard shortcut listener (Cmd/Ctrl + K) to toggle visibility.
- * Contains a searchable input field and a list of command suggestions.
- * When no results match the search, displays "No results found."
- */
 export function CommandMenu() {
   const [open, setOpen] = useState(false);
+  const [prompt, setPrompt] = useState('');
+  const [response, setResponse] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
@@ -41,9 +27,51 @@ export function CommandMenu() {
     return () => document.removeEventListener('keydown', down);
   }, []);
 
+  // Submit on Enter
+  const handleInputKeyDown = async (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' && prompt.trim()) {
+      await handleSubmit();
+    }
+  };
+
+  // Call the backend API
+  const handleSubmit = async () => {
+    setLoading(true);
+    setResponse(null);
+    try {
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          messages: [{ role: 'user', content: prompt }],
+        }),
+      });
+      const data = await res.json();
+
+      // Handle error from backend
+      if (data.error) {
+        setResponse(`Error: ${data.error}`);
+      } else if (data.content && data.content.trim()) {
+        setResponse(data.content);
+      } else {
+        setResponse('No response from AI. (It may have been filtered or empty.)');
+      }
+    } catch {
+      setResponse('Error fetching response');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <CommandDialog open={open} onOpenChange={setOpen}>
-      <CommandInput placeholder="Type a command or search..." />
+      <CommandInput
+        placeholder="Type a prompt for AI..."
+        value={prompt}
+        onValueChange={setPrompt}
+        onKeyDown={handleInputKeyDown}
+        disabled={loading}
+      />
       <CommandList>
         <CommandEmpty>No results found.</CommandEmpty>
         <CommandGroup heading="Suggestions">
@@ -51,6 +79,12 @@ export function CommandMenu() {
           <CommandItem>Search Emoji</CommandItem>
           <CommandItem>Calculator</CommandItem>
         </CommandGroup>
+        {loading && <div className="p-4 text-sm text-muted-foreground">Loading...</div>}
+        {response && (
+          <div className="p-4 text-sm text-primary">
+            <strong>AI:</strong> {response}
+          </div>
+        )}
       </CommandList>
     </CommandDialog>
   );
