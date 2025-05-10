@@ -153,8 +153,6 @@ model StakeholderEvents {
 
     stakeholder Stakeholders @relation(fields: [stakeholderId], references: [id])
     round       Rounds       @relation(fields: [roundId], references: [id])
-
-    @@unique([stakeholderId, roundId])
 }
 
 // Manages warrant and option shares allocated to stakeholders
@@ -203,6 +201,7 @@ model Contracts {
     createdAt    DateTime         @default(now())
     dataType     ContractDataType
     status       GlobalStates
+    shares       Int?
     contractUrl  String?          @db.Text
     contractJson Json?
     investmentId String

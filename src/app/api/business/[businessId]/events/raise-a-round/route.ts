@@ -16,8 +16,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ bus
       stakeholder: {
         name: string;
       };
-      contracts: { title: string; description: string; rule: any }[];
-      amount: number;
+      contracts: { title: string; description: string; rule: any; shares: number }[];
+      // amount: number;
       shares: number;
       notes: string;
     }[];
@@ -48,16 +48,25 @@ export async function POST(request: Request, { params }: { params: Promise<{ bus
     const totalShares = Number(businessInfo?.totalShares ?? 0);
     const sharesIssued = investments.reduce((acc, investment) => acc + investment.shares, 0);
     const sharesDiluted = dilutions.reduce((acc, dilusion) => acc + dilusion.shares, 0);
+    const contractShares = investments.reduce((acc, investment) => {
+      const contractShares = investment.contracts.reduce((acc, contract) => acc + contract.shares, 0);
+      return acc + contractShares;
+    }, 0);
+
+    const investmentsWithPrice = investments.map((investment) => ({
+      ...investment,
+      amount: (investment.shares * round.preMoneyValuation) / totalShares,
+    }));
 
     const postMoneyValuation =
-      round.preMoneyValuation + investments.reduce((acc, investment) => acc + investment.amount, 0);
+      round.preMoneyValuation + investmentsWithPrice.reduce((acc, investment) => acc + investment.amount, 0);
 
     await tx.businessEvents.create({
       data: {
         roundId: roundDb.id,
         businessId,
         createdAt,
-        balanceShares: balanceShares - sharesIssued + sharesDiluted,
+        balanceShares: balanceShares - (sharesIssued + contractShares) + sharesDiluted,
         totalShares: totalShares,
         preMoneyValuation: round.preMoneyValuation,
         postMoneyValuation: postMoneyValuation,
@@ -65,7 +74,9 @@ export async function POST(request: Request, { params }: { params: Promise<{ bus
     });
 
     const users = await tx.users.findMany({
-      where: { name: { in: [...dilutions.map((d) => d.name), ...investments.map((i) => i.stakeholder.name)] } },
+      where: {
+        name: { in: [...dilutions.map((d) => d.name), ...investmentsWithPrice.map((i) => i.stakeholder.name)] },
+      },
       select: { id: true, name: true },
     });
 
@@ -79,7 +90,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ bus
     const stakeholderMap = new Map(stakeholders.map((stakeholder) => [stakeholder.userId, stakeholder.id]));
 
     await tx.stakeholderEvents.createMany({
-      data: investments.map((investment) => ({
+      data: investmentsWithPrice.map((investment) => ({
         roundId: roundDb.id,
         stakeholderId: stakeholderMap.get(userMap.get(investment.stakeholder.name)!)!,
         shares: investment.shares,
@@ -91,29 +102,51 @@ export async function POST(request: Request, { params }: { params: Promise<{ bus
     });
 
     await Promise.all(
-      investments.map(
-        async (investment) =>
-          await tx.investments.create({
-            data: {
-              roundId: roundDb.id,
-              stakeholderId: stakeholderMap.get(userMap.get(investment.stakeholder.name)!)!,
-              amount: investment.amount,
-              notes: investment.notes,
-              createdAt,
-              contracts: {
-                createMany: {
-                  data: investment.contracts.map((contract) => ({
-                    title: contract.title,
-                    description: contract.description,
-                    contractJson: contract.rule,
-                    status: GlobalStates.PENDING,
-                    dataType: ContractDataType.JSON,
-                  })),
-                },
+      investmentsWithPrice.map(async (investment) => {
+        const investmentsDb = await tx.investments.create({
+          data: {
+            roundId: roundDb.id,
+            stakeholderId: stakeholderMap.get(userMap.get(investment.stakeholder.name)!)!,
+            amount: investment.amount,
+            notes: investment.notes,
+            createdAt,
+            contracts: {
+              createMany: {
+                data: investment.contracts.map((contract) => ({
+                  title: contract.title,
+                  description: contract.description,
+                  contractJson: contract.rule,
+                  status: GlobalStates.PENDING,
+                  dataType: ContractDataType.JSON,
+                  shares: contract.shares,
+                })),
               },
             },
-          })
-      )
+          },
+          select: {
+            roundId: true,
+            stakeholderId: true,
+            contracts: true,
+          },
+        });
+
+        const contractsDb = investmentsDb.contracts;
+
+        await tx.stakeholderEvents.createMany({
+          data: contractsDb
+            .filter((x) => x.shares)
+            .map((contract) => ({
+              roundId: investmentsDb.roundId,
+              stakeholderId: investmentsDb.stakeholderId,
+              shares: contract.shares!,
+              createdAt,
+              shareAllocationType: ShareAllocationType.CONTRACT_PRICE,
+              shareType: ShareType.COMMON,
+              eventType: EventType.INVESTMENT,
+              contractId: contract.id,
+            })),
+        });
+      })
     );
 
     await tx.stakeholderEvents.createMany({
@@ -121,7 +154,6 @@ export async function POST(request: Request, { params }: { params: Promise<{ bus
         roundId: roundDb.id,
         stakeholderId: stakeholderMap.get(userMap.get(dilution.name)!)!,
         shares: -dilution.shares,
-
         createdAt,
         shareAllocationType: ShareAllocationType.ACTUAL_PRICE,
         shareType: ShareType.COMMON,
