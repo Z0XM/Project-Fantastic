@@ -56,10 +56,10 @@ export default function StakeholdersPpage() {
           'Content-Type': 'application/json',
         },
       });
-
+    },
+    onSuccess: () => {
+      toast.success(`Added stakeholder!`);
       queryClient.invalidateQueries({ queryKey: ['stakeholders', businessId] });
-
-      toast.success(`Added ${stakeholder.name} as a ${formatEnum(stakeholder.type)}`);
     },
   });
 

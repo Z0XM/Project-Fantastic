@@ -1,6 +1,7 @@
 'use client';
 
-import CreateEventPopup from '@/components/events/create-event';
+import AllocateShares from '@/components/events/allocate-shares';
+import EventRaiseARound from '@/components/events/raise-a-round';
 import { Button } from '@/components/ui/button';
 
 import { Card, CardContent } from '@/components/ui/card';
@@ -93,12 +94,30 @@ export default function EventCreatePage() {
           ))}
         </div>
       </div>
-      <CreateEventPopup
-        backgroundColor={event?.color}
-        eventType={(event?.type as any) ?? 'raise-round'}
-        isDialogOpen={isDialogOpen}
-        setIsDialogOpen={setIsDialogOpen}
-      />
+      {event?.type === 'raise-round' ? (
+        <EventRaiseARound
+          backgroundColor={event?.color}
+          isDialogOpen={isDialogOpen}
+          setIsDialogOpen={setIsDialogOpen}
+        />
+      ) : null}
+      {event?.type === 'warrant-options' ? (
+        <EventRaiseARound
+          backgroundColor={event?.color}
+          isDialogOpen={isDialogOpen}
+          setIsDialogOpen={setIsDialogOpen}
+        />
+      ) : null}
+      {event?.type === 'allocate-shares' ? (
+        <AllocateShares backgroundColor={event?.color} isDialogOpen={isDialogOpen} setIsDialogOpen={setIsDialogOpen} />
+      ) : null}
+      {event?.type === 'issue-contracts' ? (
+        <EventRaiseARound
+          backgroundColor={event?.color}
+          isDialogOpen={isDialogOpen}
+          setIsDialogOpen={setIsDialogOpen}
+        />
+      ) : null}
     </main>
   );
 }

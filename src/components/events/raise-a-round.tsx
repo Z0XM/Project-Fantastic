@@ -1,6 +1,6 @@
 'use client';
 
-import { Dispatch, SetStateAction, useState } from 'react';
+import { Dispatch, SetStateAction, useEffect, useState } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -17,68 +17,64 @@ import { toast } from 'sonner';
 import { Button } from '../ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Plus, Trash2, FilePlus, File } from 'lucide-react';
-import { format } from 'date-fns';
-import { cn, formatEnum } from '@/lib/utils';
+import { cn, formatDate, formatEnum } from '@/lib/utils';
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '../ui/form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Controller, useForm } from 'react-hook-form';
 import { z } from 'zod';
-import { RoundType, Stakeholders } from '@prisma/client';
+import { BusinessEvents, RoundType, Stakeholders } from '@prisma/client';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from '../ui/sheet';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useParams } from 'next/navigation';
 
-const formSchema = z
-  .object({
-    round: z.object({
-      name: z.string().min(1, { message: 'Round name is required' }),
-      type: z.nativeEnum(RoundType),
-      date: z.string().refine((val) => !isNaN(Date.parse(val)), { message: 'Invalid date' }),
-      valuation: z.coerce.number().min(0, { message: 'Valuation is required' }),
-    }),
-    investments: z.array(
-      z.object({
-        stakeholder: z.object({
-          name: z.string().min(1, { message: 'Investor name is required' }),
-        }),
-        contracts: z.array(z.object({ title: z.string(), description: z.string().optional(), rule: z.any() })),
-        amount: z.coerce.number().min(0, { message: 'Amount is required' }),
-        shares: z.coerce.number().min(0, { message: 'No. of shares is required' }),
-        notes: z.string().optional(),
-      })
-    ),
-    dilutions: z.array(
-      z.object({
-        name: z.string().min(1, { message: 'Dilution stakeholder name is required' }),
-        shares: z.coerce.number().min(0, { message: 'Dilution stakeholder shares are required' }),
-      })
-    ),
-  })
-  .refine(
-    (data) => {
-      const totalInvestmentShares = data.investments.reduce((acc, investment) => acc + investment.shares, 0);
-      const totalDilutionShares = data.dilutions.reduce((acc, dilution) => acc + dilution.shares, 0);
-      return totalInvestmentShares === totalDilutionShares;
-    },
-    {
-      message: 'Total shares allocated to investors must equal total shares diluted',
-    }
-  );
+const formSchema = z.object({
+  round: z.object({
+    name: z.string().min(1, { message: 'Round name is required' }),
+    type: z.nativeEnum(RoundType),
+    date: z.string().refine((val) => !isNaN(Date.parse(val)), { message: 'Invalid date' }),
+    valuation: z.coerce.number().min(0, { message: 'Valuation is required' }),
+  }),
+  investments: z.array(
+    z.object({
+      stakeholder: z.object({
+        name: z.string().min(1, { message: 'Investor name is required' }),
+      }),
+      contracts: z.array(z.object({ title: z.string(), description: z.string().optional(), rule: z.any() })),
+      amount: z.coerce.number().min(0, { message: 'Amount is required' }),
+      shares: z.coerce.number().min(0, { message: 'No. of shares is required' }),
+      notes: z.string().optional(),
+    })
+  ),
+  dilutions: z.array(
+    z.object({
+      name: z.string().min(1, { message: 'Dilution stakeholder name is required' }),
+      shares: z.coerce.number().min(0, { message: 'Dilution stakeholder shares are required' }),
+    })
+  ),
+});
 
-export default function CreateEventPopup({
+export default function EventRaiseARound({
   isDialogOpen,
   setIsDialogOpen,
-  eventType,
   backgroundColor,
 }: {
   backgroundColor?: string;
   isDialogOpen: boolean;
   setIsDialogOpen: Dispatch<SetStateAction<boolean>>;
-  eventType?: 'raise-round' | 'warrant-options' | 'allocate-shares' | 'issue-contracts';
 }) {
   const { businessId } = useParams();
+
+  const businessInfoQuery = useQuery({
+    queryKey: ['businessInfo', businessId],
+    queryFn: async () => {
+      const response = await fetch(`/api/business/${businessId}/info`);
+      const data = await response.json();
+      return (data.businessInfo ?? null) as BusinessEvents | null;
+    },
+  });
+  const businessInfo = businessInfoQuery.data;
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -86,8 +82,8 @@ export default function CreateEventPopup({
       round: {
         name: '',
         type: RoundType.SERIES_A,
-        date: new Date().toISOString().split('T')[0],
-        valuation: 0,
+        date: formatDate(new Date()),
+        valuation: Number(businessInfo?.valuation ?? 0),
       },
       investments: [
         {
@@ -98,25 +94,46 @@ export default function CreateEventPopup({
           notes: '',
         },
       ],
-      dilutions: [
-        {
-          name: '',
-          shares: 0,
-        },
-      ],
+      dilutions: [],
     },
   });
 
+  useEffect(() => {
+    if (businessInfo) {
+      form.setValue('round.valuation', Number(businessInfo.valuation ?? 0));
+    }
+  }, [businessInfo]);
+
   const [sheetOpen, setSheetOpen] = useState(false);
 
+  const queryClient = useQueryClient();
+
+  const raiseMutation = useMutation({
+    mutationFn: async (data: z.infer<typeof formSchema>) => {
+      await fetch(`/api/business/${businessId}/events/raise-a-round`, {
+        method: 'POST',
+        body: JSON.stringify(data),
+        headers: { 'Content-Type': 'application/json' },
+      });
+    },
+    onSuccess: () => {
+      toast.success('Round Raised successfully!');
+      queryClient.invalidateQueries({ queryKey: ['businessInfo', businessId] });
+      queryClient.invalidateQueries({ queryKey: ['stakeholders', businessId] });
+      queryClient.invalidateQueries({ queryKey: ['events', businessId] });
+    },
+    onError: (error) => {
+      toast.error(`Error allocating shares!`);
+    },
+  });
+
   const onSubmit = (values: z.infer<typeof formSchema>) => {
-    // console.log('Form submitted', { investors, date });
-    toast.success('Investment round saved successfully!');
+    raiseMutation.mutate(values);
     setIsDialogOpen(false);
   };
 
-  const stakeholdersListQuery = useQuery({
-    queryKey: ['stakeholders', businessId],
+  const stakeholdersMinQuery = useQuery({
+    queryKey: ['stakeholders', businessId, 'min'],
     queryFn: async () => {
       const response = await fetch(`/api/business/${businessId}/stakeholders/min`);
       const data = await response.json();
@@ -124,7 +141,7 @@ export default function CreateEventPopup({
     },
   });
 
-  const stakeholders = stakeholdersListQuery.data ?? [];
+  const stakeholders = stakeholdersMinQuery.data ?? [];
 
   return (
     <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
@@ -132,17 +149,7 @@ export default function CreateEventPopup({
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} onReset={() => setIsDialogOpen(false)}>
             <DialogHeader>
-              <DialogTitle className="text-foreground text-2xl">
-                {eventType === 'raise-round'
-                  ? 'Raise a Round'
-                  : eventType === 'allocate-shares'
-                  ? 'Allocate New Shares'
-                  : eventType === 'issue-contracts'
-                  ? 'Issue Existing Contracts'
-                  : eventType === 'warrant-options'
-                  ? 'Grant Warrants or Options'
-                  : ''}
-              </DialogTitle>
+              <DialogTitle className="text-foreground text-2xl">Raise a Round</DialogTitle>
               <DialogDescription>
                 Enter the details of your new funding round. This will update your cap table with the new investor
                 allocations.
@@ -151,7 +158,6 @@ export default function CreateEventPopup({
 
             <div className="gap-8 grid my-4">
               <Card className="shadow-md border-none overflow-hidden">
-                <div className="z-0 absolute inset-0 bg-gradient-to-br from-pastel-blue via-white to-pastel-green opacity-30"></div>
                 <CardHeader className="z-10 relative">
                   <CardTitle>Round Details</CardTitle>
                   <CardDescription>Enter the details of this investment round</CardDescription>
@@ -188,7 +194,7 @@ export default function CreateEventPopup({
                               <PopoverContent className="p-0 w-auto" align="start">
                                 <CalendarComponent
                                   mode="single"
-                                  onSelect={(date) => date && field.onChange(format(new Date(date), 'yyyy-MM-dd'))}
+                                  onSelect={(date) => date && field.onChange(formatDate(new Date(date)))}
                                   initialFocus
                                   className="pointer-events-auto"
                                 />
@@ -207,16 +213,31 @@ export default function CreateEventPopup({
                         <FormItem>
                           <FormLabel>Round Type</FormLabel>
                           <FormControl>
-                            <Select>
+                            <Select onValueChange={field.onChange} {...field}>
                               <SelectTrigger className="w-[180px]">
                                 <SelectValue placeholder="..." {...field} />
                               </SelectTrigger>
                               <SelectContent>
-                                {Object.keys(RoundType).map((key) => (
-                                  <SelectItem key={key} value={RoundType[key as keyof typeof RoundType]}>
-                                    {formatEnum(key)}
-                                  </SelectItem>
-                                ))}
+                                {[
+                                  RoundType.BOOTSTRAP,
+                                  RoundType.SEED,
+                                  RoundType.SERIES_A,
+                                  RoundType.SERIES_B,
+                                  RoundType.SERIES_C,
+                                  RoundType.SERIES_N,
+                                  RoundType.BRIDGE,
+                                  RoundType.IPO,
+                                  RoundType.CROWDFUNDING,
+                                  RoundType.CONVERTIBLE_NOTE,
+                                  RoundType.SAFE,
+                                  RoundType.VENTURE_DEBT,
+                                ]
+                                  .sort()
+                                  .map((key) => (
+                                    <SelectItem key={key} value={RoundType[key as keyof typeof RoundType]}>
+                                      {formatEnum(key)}
+                                    </SelectItem>
+                                  ))}
                               </SelectContent>
                             </Select>
                           </FormControl>
@@ -238,6 +259,17 @@ export default function CreateEventPopup({
                           <FormMessage />
                         </FormItem>
                       )}
+                    />
+                    <RoundMetrics
+                      oldValuation={Number(businessInfo?.valuation ?? 0)}
+                      preMoneyValuation={Number(form.watch('round.valuation') ?? 0)}
+                      investment={form.watch('investments').reduce((acc, x) => acc + Number(x.amount), 0)}
+                      totalShares={Number(businessInfo?.totalShares ?? 0)}
+                      balanceShares={
+                        Number(businessInfo?.balanceShares ?? 0) -
+                        form.watch('investments').reduce((acc, x) => acc + Number(x.shares), 0) +
+                        form.watch('dilutions').reduce((acc, x) => acc + Number(x.shares), 0)
+                      }
                     />
                   </div>
                 </CardContent>
@@ -273,7 +305,7 @@ export default function CreateEventPopup({
                       <div key={`form-investement-${index}`} className="space-y-4 bg-muted p-4 rounded-lg">
                         <div className="flex justify-between items-center mb-4">
                           <h3 className="font-medium text-lg">Investor {index + 1}</h3>
-                          {form.getValues('investments').length > 1 && (
+                          {form.watch('investments').length > 1 && (
                             <Button
                               variant="outline"
                               size="icon"
@@ -300,7 +332,7 @@ export default function CreateEventPopup({
                               <FormItem>
                                 <FormLabel>Name</FormLabel>
                                 <FormControl>
-                                  <Select {...field}>
+                                  <Select onValueChange={field.onChange} {...field}>
                                     <SelectTrigger className="col-span-3">
                                       <SelectValue
                                         placeholder={
@@ -310,6 +342,14 @@ export default function CreateEventPopup({
                                     </SelectTrigger>
                                     <SelectContent>
                                       {stakeholders
+                                        .filter(
+                                          (user) =>
+                                            !form
+                                              .watch('investments')
+                                              .filter((_, yIndex) => index !== yIndex)
+                                              .map((inv) => inv.stakeholder.name)
+                                              .includes(user.name)
+                                        )
                                         .map((user) => user.name)
                                         .sort()
                                         .map((type) => (
@@ -402,7 +442,7 @@ export default function CreateEventPopup({
                                   <FormField
                                     control={form.control}
                                     name={`investments.${index}.contracts.${
-                                      form.getValues(`investments.${index}.contracts`).length - 1
+                                      form.watch(`investments.${index}.contracts`).length - 1
                                     }.title`}
                                     render={({ field }) => (
                                       <FormItem>
@@ -418,7 +458,7 @@ export default function CreateEventPopup({
                                   <FormField
                                     control={form.control}
                                     name={`investments.${index}.contracts.${
-                                      form.getValues(`investments.${index}.contracts`).length - 1
+                                      form.watch(`investments.${index}.contracts`).length - 1
                                     }.description`}
                                     render={({ field }) => (
                                       <FormItem>
@@ -434,7 +474,7 @@ export default function CreateEventPopup({
                                   <FormField
                                     control={form.control}
                                     name={`investments.${index}.contracts.${
-                                      form.getValues(`investments.${index}.contracts`).length - 1
+                                      form.watch(`investments.${index}.contracts`).length - 1
                                     }.rule`}
                                     render={({ field }) => (
                                       <FormItem>
@@ -535,23 +575,21 @@ export default function CreateEventPopup({
                       <div key={`form-dilution-${index}`} className="space-y-4 bg-muted p-4 rounded-lg">
                         <div className="flex justify-between items-center mb-4">
                           <h3 className="font-medium text-lg">Stakeholder {index + 1}</h3>
-                          {form.getValues('dilutions').length > 1 && (
-                            <Button
-                              variant="outline"
-                              size="icon"
-                              type="button"
-                              onClick={(e) => {
-                                e.preventDefault();
-                                form.setValue(
-                                  'dilutions',
-                                  form.getValues('dilutions').filter((_, i) => i !== index)
-                                );
-                              }}
-                              className="hover:bg-destructive/10 w-8 h-8 text-destructive"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
-                          )}
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            type="button"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              form.setValue(
+                                'dilutions',
+                                form.getValues('dilutions').filter((_, i) => i !== index)
+                              );
+                            }}
+                            className="hover:bg-destructive/10 w-8 h-8 text-destructive"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
                         </div>
 
                         <div className="gap-4 grid grid-cols-2">
@@ -562,7 +600,7 @@ export default function CreateEventPopup({
                               <FormItem>
                                 <FormLabel>Name</FormLabel>
                                 <FormControl>
-                                  <Select {...field}>
+                                  <Select onValueChange={field.onChange} {...field}>
                                     <SelectTrigger className="col-span-3">
                                       <SelectValue
                                         placeholder={
@@ -574,6 +612,14 @@ export default function CreateEventPopup({
                                     </SelectTrigger>
                                     <SelectContent>
                                       {stakeholders
+                                        .filter(
+                                          (user) =>
+                                            !form
+                                              .watch('dilutions')
+                                              .filter((_, yIndex) => index !== yIndex)
+                                              .map((dil) => dil.name)
+                                              .includes(user.name)
+                                        )
                                         .filter((user) => user.hasStakes)
                                         .map((user) => user.name)
                                         .sort()
@@ -622,5 +668,50 @@ export default function CreateEventPopup({
         </Form>
       </DialogContent>
     </Dialog>
+  );
+}
+
+function RoundMetrics(props: {
+  preMoneyValuation: number;
+  investment: number;
+  oldValuation: number;
+  totalShares: number;
+  balanceShares: number;
+}) {
+  const postMoneyValuation = props.preMoneyValuation + props.investment;
+  const growth = ((postMoneyValuation - props.oldValuation) / props.oldValuation) * 100;
+
+  return (
+    <>
+      <div>
+        <div className="mb-1 font-medium text-foreground text-sm">Growth (Post Money)</div>
+        <div className="text-md">
+          <div className={`font-medium text-xl ${growth >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+            {growth.toFixed(1)}%
+          </div>
+        </div>
+      </div>
+      <div>
+        <div className="mb-1 font-medium text-foreground text-sm">Post Money Valuation</div>
+        <div className="text-md">
+          <div className={`font-medium text-xl ${growth >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+            {postMoneyValuation.toLocaleString()}
+          </div>
+        </div>
+      </div>
+      <div>
+        <div className="mb-1 font-medium text-foreground text-sm">Total Shares</div>
+        <div className="text-md">
+          <div className={`font-medium text-xl `}>{props.totalShares.toLocaleString()}</div>
+        </div>
+      </div>
+
+      <div>
+        <div className="mb-1 font-medium text-foreground text-sm">Balance Shares</div>
+        <div className="text-md">
+          <div className={`font-medium text-xl `}>{props.balanceShares.toLocaleString()}</div>
+        </div>
+      </div>
+    </>
   );
 }

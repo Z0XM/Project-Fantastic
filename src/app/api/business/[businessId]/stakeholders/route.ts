@@ -15,8 +15,8 @@ export async function GET(request: Request, { params }: { params: Promise<{ busi
     config: stakeholder.config,
     createdAt: stakeholder.createdAt,
     totalInvestment: stakeholder.investments.reduce((acc, investment) => acc + Number(investment.amount), 0),
-    totalShares: stakeholder.stakeholderEvents.reduce((acc, event) => acc + event.shares, 0),
-    warrantNOptions: stakeholder.warrantandOptionShares.reduce((acc, event) => acc + event.shares, 0),
+    totalShares: stakeholder.stakeholderEvents.reduce((acc, event) => acc + Number(event.shares), 0),
+    warrantNOptions: stakeholder.warrantandOptionShares.reduce((acc, event) => acc + Number(event.shares), 0),
   }));
   return Response.json(formattedStakeholders);
 }
@@ -42,5 +42,5 @@ export async function POST(request: Request, { params }: { params: Promise<{ bus
     },
   });
 
-  return Response.json({});
+  return Response.json({}, { status: 201 });
 }

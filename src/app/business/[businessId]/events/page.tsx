@@ -16,7 +16,7 @@ type Event = Rounds & {
 export default function EventsPage() {
   const { businessId } = useParams();
   const eventsQuery = useQuery({
-    queryKey: ['events'],
+    queryKey: ['events', businessId],
     queryFn: async () => {
       const response = await fetch(`/api/business/${businessId}/events`);
       const data = await response.json();

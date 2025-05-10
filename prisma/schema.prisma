@@ -36,6 +36,8 @@ enum RoundType {
     SAFE
     VENTURE_DEBT
     WARRANT_OPTION
+    NEW_SHARES
+    STOCK_SPLIT
 }
 
 // Represents funding rounds with their type and associated events
@@ -119,16 +121,19 @@ enum ShareType {
 }
 
 enum ShareAllocationType {
+    NONE
     ACTUAL_PRICE
     CONTRACT_PRICE
 }
 
 enum EventType {
     INVESTMENT
+    ALLOCATION
     OPTION
     WARRANT
     CONVERTIBLE_NOTE
     SAFE
+    DILUTION
 }
 
 // Records share allocation events for stakeholders in specific rounds
@@ -141,7 +146,7 @@ model StakeholderEvents {
     eventType           EventType
     shareType           ShareType
     shareAllocationType ShareAllocationType
-    pricePerShare       Decimal
+    pricePerShare       Decimal?
     contractId          String?
     contract            Contracts?          @relation(fields: [contractId], references: [id])
 
@@ -208,9 +213,7 @@ model Contracts {
 }
 
 enum GlobalStates {
-    DRAFT
     PENDING
-    APPROVED
-    REJECTED
     COMPLETED
+    REJECTED
 }
