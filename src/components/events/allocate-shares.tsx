@@ -71,6 +71,7 @@ export default function AllocateShares({
       queryClient.invalidateQueries({ queryKey: ['businessInfo', businessId] });
       queryClient.invalidateQueries({ queryKey: ['stakeholders', businessId] });
       queryClient.invalidateQueries({ queryKey: ['events', businessId] });
+      queryClient.invalidateQueries({ queryKey: ['contracts', businessId] });
     },
     onError: (error) => {
       toast.error(`Error allocating shares!`);

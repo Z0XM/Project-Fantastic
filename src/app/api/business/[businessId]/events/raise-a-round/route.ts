@@ -16,7 +16,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ bus
       stakeholder: {
         name: string;
       };
-      contracts: { title: string; description: string; rule: any; shares: number }[];
+      contracts: { title: string; description: string; shares: number }[];
       // amount: number;
       shares: number;
       notes: string;
@@ -115,8 +115,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ bus
                 data: investment.contracts.map((contract) => ({
                   title: contract.title,
                   description: contract.description,
-                  contractJson: contract.rule,
-                  status: GlobalStates.PENDING,
+                  // contractJson: contract.rule,
+                  status: GlobalStates.COMPLETED,
                   dataType: ContractDataType.JSON,
                   shares: contract.shares,
                 })),
@@ -144,6 +144,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ bus
               shareType: ShareType.COMMON,
               eventType: EventType.INVESTMENT,
               contractId: contract.id,
+              pricePerShare: (contract.contractJson as any).pricePerShare ?? 0,
             })),
         });
       })

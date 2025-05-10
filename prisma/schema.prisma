@@ -35,7 +35,8 @@ enum RoundType {
     CONVERTIBLE_NOTE
     SAFE
     VENTURE_DEBT
-    WARRANT_OPTION
+    WARRANT
+    OPTION
     NEW_SHARES
     STOCK_SPLIT
 }

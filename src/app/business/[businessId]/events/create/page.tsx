@@ -1,7 +1,9 @@
 'use client';
 
 import AllocateShares from '@/components/events/allocate-shares';
+import IssueContracts from '@/components/events/issue-contract';
 import EventRaiseARound from '@/components/events/raise-a-round';
+import WarrantNOptions from '@/components/events/warrant-n-options';
 import { Button } from '@/components/ui/button';
 
 import { Card, CardContent } from '@/components/ui/card';
@@ -102,21 +104,13 @@ export default function EventCreatePage() {
         />
       ) : null}
       {event?.type === 'warrant-options' ? (
-        <EventRaiseARound
-          backgroundColor={event?.color}
-          isDialogOpen={isDialogOpen}
-          setIsDialogOpen={setIsDialogOpen}
-        />
+        <WarrantNOptions backgroundColor={event?.color} isDialogOpen={isDialogOpen} setIsDialogOpen={setIsDialogOpen} />
       ) : null}
       {event?.type === 'allocate-shares' ? (
         <AllocateShares backgroundColor={event?.color} isDialogOpen={isDialogOpen} setIsDialogOpen={setIsDialogOpen} />
       ) : null}
       {event?.type === 'issue-contracts' ? (
-        <EventRaiseARound
-          backgroundColor={event?.color}
-          isDialogOpen={isDialogOpen}
-          setIsDialogOpen={setIsDialogOpen}
-        />
+        <IssueContracts backgroundColor={event?.color} isDialogOpen={isDialogOpen} setIsDialogOpen={setIsDialogOpen} />
       ) : null}
     </main>
   );

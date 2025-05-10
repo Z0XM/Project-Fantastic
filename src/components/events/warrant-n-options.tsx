@@ -32,36 +32,30 @@ import { useParams } from 'next/navigation';
 const formSchema = z.object({
   round: z.object({
     name: z.string().min(1, { message: 'Round name is required' }),
-    type: z.nativeEnum(RoundType),
+    type: z.literal(RoundType.WARRANT).or(z.literal(RoundType.OPTION)),
     date: z.string().refine((val) => !isNaN(Date.parse(val)), { message: 'Invalid date' }),
-    preMoneyValuation: z.coerce.number().min(0, { message: 'Valuation is required' }),
   }),
   investments: z.array(
     z.object({
       stakeholder: z.object({
         name: z.string().min(1, { message: 'Investor name is required' }),
       }),
-      contracts: z.array(
-        z.object({
-          title: z.string(),
-          description: z.string().optional(),
-          shares: z.coerce.number().min(0).optional(),
-        })
-      ),
-      amount: z.coerce.number().min(0, { message: 'Amount is required' }),
-      shares: z.coerce.number().min(0, { message: 'No. of shares is required' }),
+      contracts: z
+        .array(
+          z.object({
+            title: z.string(),
+            description: z.string().optional(),
+          })
+        )
+        .min(1, { message: 'At least one contract is required' }),
+      pricePerShare: z.coerce.number().min(0, { message: 'Per share price is required' }),
+      shares: z.coerce.number().min(1, { message: 'No. of shares is required' }),
       notes: z.string().optional(),
-    })
-  ),
-  dilutions: z.array(
-    z.object({
-      name: z.string().min(1, { message: 'Dilution stakeholder name is required' }),
-      shares: z.coerce.number().min(0, { message: 'Dilution stakeholder shares are required' }),
     })
   ),
 });
 
-export default function EventRaiseARound({
+export default function WarrantNOptions({
   isDialogOpen,
   setIsDialogOpen,
   backgroundColor,
@@ -85,37 +79,27 @@ export default function EventRaiseARound({
   const form = useForm<z.infer<typeof formSchema>>({
     // resolver: async (data, context, options) => {
     //   const result = await zodResolver(formSchema)(data, context, options);
-    //   if (result.errors) {
-    //     console.info('Form validation errors:', result.errors);
-    //   }
+
     //   return result;
     // },
     resolver: zodResolver(formSchema),
     defaultValues: {
       round: {
         name: '',
-        type: RoundType.SERIES_A,
+        type: RoundType.WARRANT,
         date: formatDate(new Date()),
-        preMoneyValuation: Number(businessInfo?.postMoneyValuation ?? 0),
       },
       investments: [
         {
           stakeholder: { name: '' },
           contracts: [],
-          amount: 0,
           shares: 0,
           notes: '',
+          pricePerShare: 0,
         },
       ],
-      dilutions: [],
     },
   });
-
-  useEffect(() => {
-    if (businessInfo) {
-      form.setValue('round.preMoneyValuation', Number(businessInfo.postMoneyValuation ?? 0));
-    }
-  }, [businessInfo]);
 
   const [sheetOpen, setSheetOpen] = useState(false);
 
@@ -123,7 +107,7 @@ export default function EventRaiseARound({
 
   const raiseMutation = useMutation({
     mutationFn: async (data: z.infer<typeof formSchema>) => {
-      await fetch(`/api/business/${businessId}/events/raise-a-round`, {
+      await fetch(`/api/business/${businessId}/events/warrant-n-options`, {
         method: 'POST',
         body: JSON.stringify(data),
         headers: { 'Content-Type': 'application/json' },
@@ -142,17 +126,6 @@ export default function EventRaiseARound({
   });
 
   const onSubmit = (values: z.infer<typeof formSchema>) => {
-    const balanceShares =
-      Number(businessInfo?.balanceShares ?? 0) -
-      (values.investments.reduce((acc, x) => acc + Number(x.shares), 0) +
-        values.investments.reduce((acc, x) => acc + x.contracts.reduce((accy, y) => accy + Number(y.shares), 0), 0)) +
-      values.dilutions.reduce((acc, x) => acc + Number(x.shares), 0);
-
-    if (balanceShares < 0) {
-      toast.error('Shares allocated exceed available shares!');
-      return;
-    }
-
     raiseMutation.mutate(values);
     setIsDialogOpen(false);
     form.reset();
@@ -244,61 +217,31 @@ export default function EventRaiseARound({
                                 <SelectValue placeholder="..." {...field} />
                               </SelectTrigger>
                               <SelectContent>
-                                {[
-                                  RoundType.BOOTSTRAP,
-                                  RoundType.SEED,
-                                  RoundType.SERIES_A,
-                                  RoundType.SERIES_B,
-                                  RoundType.SERIES_C,
-                                  RoundType.SERIES_N,
-                                  RoundType.BRIDGE,
-                                  RoundType.IPO,
-                                  RoundType.CROWDFUNDING,
-                                  RoundType.CONVERTIBLE_NOTE,
-                                  RoundType.SAFE,
-                                  RoundType.VENTURE_DEBT,
-                                ]
-                                  .sort()
-                                  .map((key) => (
-                                    <SelectItem key={key} value={RoundType[key as keyof typeof RoundType]}>
-                                      {formatEnum(key)}
-                                    </SelectItem>
-                                  ))}
+                                {[RoundType.WARRANT, RoundType.OPTION].sort().map((key) => (
+                                  <SelectItem key={key} value={RoundType[key as keyof typeof RoundType]}>
+                                    {formatEnum(key)}
+                                  </SelectItem>
+                                ))}
                               </SelectContent>
                             </Select>
                           </FormControl>
-                          <FormDescription>Type of Round</FormDescription>
+                          <FormDescription>Issue Warrants or Options</FormDescription>
                           <FormMessage />
                         </FormItem>
                       )}
                     />
-                    <FormField
-                      control={form.control}
-                      name="round.preMoneyValuation"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Pre Money Valuation</FormLabel>
-                          <FormControl>
-                            <Input type="number" {...field} />
-                          </FormControl>
-                          <FormDescription>Valuation at which the round is raised.</FormDescription>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+
+                    <div>
+                      <div className="mb-1 font-medium text-foreground text-sm">Current Valuation</div>
+                      <div className="text-md">
+                        <div className={`font-medium text-xl`}>
+                          {formatCurrency(Number(businessInfo?.postMoneyValuation))}
+                        </div>
+                      </div>
+                    </div>
                     <RoundMetrics
-                      oldValuation={Number(businessInfo?.postMoneyValuation ?? 0)}
-                      preMoneyValuation={Number(form.watch('round.preMoneyValuation') ?? 0)}
-                      investment={form.watch('investments').reduce((acc, x) => acc + Number(x.amount), 0)}
                       totalShares={Number(businessInfo?.totalShares ?? 0)}
-                      balanceShares={
-                        Number(businessInfo?.balanceShares ?? 0) -
-                        (form.watch('investments').reduce((acc, x) => acc + Number(x.shares), 0) +
-                          form
-                            .watch('investments')
-                            .reduce((acc, x) => acc + x.contracts.reduce((accy, y) => accy + Number(y.shares), 0), 0)) +
-                        form.watch('dilutions').reduce((acc, x) => acc + Number(x.shares), 0)
-                      }
+                      balanceShares={Number(businessInfo?.balanceShares ?? 0)}
                     />
                   </div>
                 </CardContent>
@@ -317,9 +260,9 @@ export default function EventRaiseARound({
                         {
                           stakeholder: { name: '' },
                           contracts: [],
-                          amount: 0,
                           shares: 0,
                           notes: '',
+                          pricePerShare: 0,
                         },
                       ]);
                     }}
@@ -394,41 +337,30 @@ export default function EventRaiseARound({
                               </FormItem>
                             )}
                           />
-                          <div className="flex justify-evenly">
-                            <div>
-                              <div className="mb-1 font-medium text-foreground text-sm">Invested Amount</div>
-                              <div className="text-md">
-                                <div className={`font-medium text-xl`}>
-                                  {formatCurrency(
-                                    (Number(form.watch(`investments.${index}.shares`)) *
-                                      Number(form.watch(`round.preMoneyValuation`))) /
-                                      Number(businessInfo?.totalShares ?? 0)
-                                  )}
-                                </div>
-                              </div>
-                            </div>
-                            <div>
-                              <div className="mb-1 font-medium text-foreground text-sm">Per Share Price</div>
-                              <div className="text-md">
-                                <div className={`font-medium text-xl`}>
-                                  {formatCurrency(
-                                    Number(form.watch(`round.preMoneyValuation`)) /
-                                      Number(businessInfo?.totalShares ?? 0)
-                                  )}
-                                </div>
-                              </div>
-                            </div>
-                          </div>
+                          <FormField
+                            control={form.control}
+                            name={`investments.${index}.pricePerShare`}
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Per Share Price</FormLabel>
+                                <FormControl>
+                                  <Input type="number" {...field} />
+                                </FormControl>
+                                <FormDescription>Price at which shares must be issued.</FormDescription>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
                           <FormField
                             control={form.control}
                             name={`investments.${index}.shares`}
                             render={({ field }) => (
                               <FormItem>
-                                <FormLabel>Shares Issued</FormLabel>
+                                <FormLabel>Shares Promised</FormLabel>
                                 <FormControl>
                                   <Input type="number" {...field} />
                                 </FormControl>
-                                <FormDescription>No. of shares issued in return.</FormDescription>
+                                <FormDescription>No. of shares promised in contract.</FormDescription>
                                 <FormMessage />
                               </FormItem>
                             )}
@@ -465,7 +397,6 @@ export default function EventRaiseARound({
                                       form.getValues(`investments.${index}.contracts`).concat({
                                         title: '',
                                         description: '',
-                                        shares: 0,
                                       })
                                     );
                                   }}
@@ -511,22 +442,6 @@ export default function EventRaiseARound({
                                       </FormItem>
                                     )}
                                   />
-                                  <FormField
-                                    control={form.control}
-                                    name={`investments.${index}.contracts.${
-                                      form.watch(`investments.${index}.contracts`).length - 1
-                                    }.shares`}
-                                    render={({ field }) => (
-                                      <FormItem>
-                                        <FormLabel>Shares Associated</FormLabel>
-                                        <FormControl>
-                                          <Input type="number" {...field} />
-                                        </FormControl>
-                                        <FormDescription>Shares issued with the contract.</FormDescription>
-                                        <FormMessage />
-                                      </FormItem>
-                                    )}
-                                  />
 
                                   <div className="flex justify-end mt-4">
                                     <Button
@@ -562,11 +477,6 @@ export default function EventRaiseARound({
                                         ) : (
                                           <span>Contract {cIndex + 1}</span>
                                         )}
-                                        {contract.shares ? (
-                                          <span className="ml-2 text-muted-foreground text-sm">
-                                            {contract.shares} shares
-                                          </span>
-                                        ) : null}
                                       </div>
                                       <Button
                                         variant="ghost"
@@ -600,115 +510,6 @@ export default function EventRaiseARound({
                   </div>
                 </CardContent>
               </Card>
-              <Card className="shadow-md border-none overflow-hidden">
-                <CardHeader className="z-10 relative flex flex-row justify-between items-center">
-                  <div>
-                    <CardTitle>Dilutions</CardTitle>
-                    <CardDescription>Add dilutions from current shareholders</CardDescription>
-                  </div>
-                  <Button
-                    type="button"
-                    onClick={() => {
-                      form.setValue('dilutions', [
-                        ...form.getValues('dilutions'),
-                        {
-                          name: '',
-                          shares: 0,
-                        },
-                      ]);
-                    }}
-                    className="bg-pastel-lavender hover:bg-pastel-peach/90 text-foreground"
-                  >
-                    <Plus className="mr-1 w-4 h-4" /> Add Dilution
-                  </Button>
-                </CardHeader>
-                <CardContent className="z-10 relative">
-                  <div className="gap-8 grid">
-                    {form.watch('dilutions').map((dilution, index) => (
-                      <div key={`form-dilution-${index}`} className="space-y-4 bg-muted p-4 rounded-lg">
-                        <div className="flex justify-between items-center mb-4">
-                          <h3 className="font-medium text-lg">Stakeholder {index + 1}</h3>
-                          <Button
-                            variant="outline"
-                            size="icon"
-                            type="button"
-                            onClick={(e) => {
-                              e.preventDefault();
-                              form.setValue(
-                                'dilutions',
-                                form.getValues('dilutions').filter((_, i) => i !== index)
-                              );
-                            }}
-                            className="hover:bg-destructive/10 w-8 h-8 text-destructive"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        </div>
-
-                        <div className="gap-4 grid grid-cols-2">
-                          <FormField
-                            control={form.control}
-                            name={`dilutions.${index}.name`}
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Name</FormLabel>
-                                <FormControl>
-                                  <Select onValueChange={field.onChange} {...field}>
-                                    <SelectTrigger className="col-span-3">
-                                      <SelectValue
-                                        placeholder={
-                                          stakeholders.filter((x) => x.hasStakes).length > 0
-                                            ? 'Select Stakeholder'
-                                            : 'Stakeholders unavailable'
-                                        }
-                                      />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      {stakeholders
-                                        .filter(
-                                          (user) =>
-                                            !form
-                                              .watch('dilutions')
-                                              .filter((_, yIndex) => index !== yIndex)
-                                              .map((dil) => dil.name)
-                                              .includes(user.name)
-                                        )
-                                        .filter((user) => user.hasStakes)
-                                        .map((user) => user.name)
-                                        .sort()
-                                        .map((type) => (
-                                          <SelectItem key={type} value={type}>
-                                            {formatEnum(type)}
-                                          </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                  </Select>
-                                </FormControl>
-                                <FormDescription>Name of the Stakeholder.</FormDescription>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                          <FormField
-                            control={form.control}
-                            name={`dilutions.${index}.shares`}
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Shares</FormLabel>
-                                <FormControl>
-                                  <Input type="number" {...field} />
-                                </FormControl>
-                                <FormDescription>Amount of shares diluted.</FormDescription>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
             </div>
 
             <DialogFooter>
@@ -724,41 +525,15 @@ export default function EventRaiseARound({
   );
 }
 
-function RoundMetrics(props: {
-  preMoneyValuation: number;
-  investment: number;
-  oldValuation: number;
-  totalShares: number;
-  balanceShares: number;
-}) {
-  const postMoneyValuation = props.preMoneyValuation + props.investment;
-  const growth = ((postMoneyValuation - props.oldValuation) / props.oldValuation) * 100;
-
+function RoundMetrics(props: { totalShares: number; balanceShares: number }) {
   return (
     <>
-      <div>
-        <div className="mb-1 font-medium text-foreground text-sm">Growth (Post Money)</div>
-        <div className="text-md">
-          <div className={`font-medium text-xl ${growth >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-            {growth.toFixed(1)}%
-          </div>
-        </div>
-      </div>
-      <div>
-        <div className="mb-1 font-medium text-foreground text-sm">Post Money Valuation</div>
-        <div className="text-md">
-          <div className={`font-medium text-xl ${growth >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-            {formatCurrency(postMoneyValuation)}
-          </div>
-        </div>
-      </div>
       <div>
         <div className="mb-1 font-medium text-foreground text-sm">Total Shares</div>
         <div className="text-md">
           <div className={`font-medium text-xl `}>{formatNumber(props.totalShares)}</div>
         </div>
       </div>
-
       <div>
         <div className="mb-1 font-medium text-foreground text-sm">Balance Shares</div>
         <div className="text-md">
