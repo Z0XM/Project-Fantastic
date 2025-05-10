@@ -14,7 +14,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { toast } from 'sonner';
 import { Button } from '../ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { cn, formatDate, formatEnum } from '@/lib/utils';
+import { cn, formatDate, formatEnum, formatNumber } from '@/lib/utils';
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '../ui/form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -90,7 +90,7 @@ export default function AllocateShares({
       name: '',
       type: RoundType.NEW_SHARES,
       date: formatDate(new Date()),
-      valuation: Number(businessInfo?.valuation ?? 0),
+      valuation: Number(businessInfo?.postMoneyValuation ?? 0),
       addedShares: 0,
       stockSplitRatio: 1,
     },
@@ -215,28 +215,34 @@ export default function AllocateShares({
                           )}
                         />
                         <div>
+                          <div className="mb-1 font-medium text-foreground text-sm">Shares (Balance / Total) </div>
+                          <div className="text-md">
+                            {formatNumber(
+                              Number(businessInfo?.balanceShares ?? 0) + Number(form.watch('addedShares') ?? 0)
+                            )}{' '}
+                            /{' '}
+                            {formatNumber(
+                              Number(businessInfo?.totalShares ?? 0) + Number(form.watch('addedShares') ?? 0)
+                            )}
+                          </div>
+                        </div>
+                        <div>
                           <div className="mb-1 font-medium text-foreground text-sm">Dilution Ratio</div>
                           <div className="text-md">
-                            {(
+                            {formatNumber(
                               Number(businessInfo?.totalShares ?? 0) /
-                              (Number(businessInfo?.totalShares ?? 0) + Number(form.watch('addedShares') ?? 0))
-                            ).toString()}
+                                (Number(businessInfo?.totalShares ?? 0) + Number(form.watch('addedShares') ?? 0))
+                            )}
                           </div>
                         </div>
+
                         <div>
-                          <div className="mb-1 font-medium text-foreground text-sm">Total Shares</div>
+                          <div className="mb-1 font-medium text-foreground text-sm">Price Per Share</div>
                           <div className="text-md">
-                            {(
-                              Number(businessInfo?.totalShares ?? 0) + Number(form.watch('addedShares') ?? 0)
-                            ).toString()}
-                          </div>
-                        </div>
-                        <div>
-                          <div className="mb-1 font-medium text-foreground text-sm">Balance Shares</div>
-                          <div className="text-md">
-                            {(
-                              Number(businessInfo?.balanceShares ?? 0) + Number(form.watch('addedShares') ?? 0)
-                            ).toString()}
+                            {formatNumber(
+                              Number(businessInfo?.postMoneyValuation ?? 0) /
+                                (Number(businessInfo?.totalShares ?? 0) + Number(form.watch('addedShares') ?? 0))
+                            )}
                           </div>
                         </div>
                       </>
@@ -273,23 +279,22 @@ export default function AllocateShares({
                         <div>
                           <div className="mb-1 font-medium text-foreground text-sm">New Shares</div>
                           <div className="text-md">
-                            {(
+                            {formatNumber(
                               Number(businessInfo?.totalShares ?? 0) * Number(form.watch('stockSplitRatio') ?? 0)
-                            ).toString()}
+                            )}
                           </div>
                         </div>
                         <div>
                           <div className="mb-1 font-medium text-foreground text-sm">Total Shares</div>
                           <div className="text-md">
-                            {(
-                              Number(businessInfo?.totalShares ?? 0) *
-                              (1 + Number(form.watch('stockSplitRatio') ?? 0))
-                            ).toString()}
+                            {formatNumber(
+                              Number(businessInfo?.totalShares ?? 0) * (1 + Number(form.watch('stockSplitRatio') ?? 0))
+                            )}
                           </div>
                         </div>
                         <div>
                           <div className="mb-1 font-medium text-foreground text-sm">Balance Shares</div>
-                          <div className="text-md">{Number(businessInfo?.balanceShares ?? 0).toString()}</div>
+                          <div className="text-md">{formatNumber(Number(businessInfo?.balanceShares ?? 0))}</div>
                         </div>
                       </>
                     )}

@@ -56,13 +56,14 @@ model Rounds {
 
 // Tracks business valuation and share information for each funding round
 model BusinessEvents {
-    id            String   @id @default(uuid())
-    businessId    String
-    roundId       String   @unique
-    totalShares   Int
-    balanceShares Int
-    valuation     Decimal
-    createdAt     DateTime @default(now())
+    id                 String   @id @default(uuid())
+    businessId         String
+    roundId            String   @unique
+    totalShares        Int
+    balanceShares      Int
+    preMoneyValuation  Decimal
+    postMoneyValuation Decimal
+    createdAt          DateTime @default(now())
 
     round    Rounds   @relation(fields: [roundId], references: [id])
     business Business @relation(fields: [businessId], references: [id])

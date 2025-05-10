@@ -17,7 +17,7 @@ import { toast } from 'sonner';
 import { Button } from '../ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Plus, Trash2, FilePlus, File } from 'lucide-react';
-import { cn, formatDate, formatEnum } from '@/lib/utils';
+import { cn, formatCurrency, formatDate, formatEnum, formatNumber } from '@/lib/utils';
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '../ui/form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -34,7 +34,7 @@ const formSchema = z.object({
     name: z.string().min(1, { message: 'Round name is required' }),
     type: z.nativeEnum(RoundType),
     date: z.string().refine((val) => !isNaN(Date.parse(val)), { message: 'Invalid date' }),
-    valuation: z.coerce.number().min(0, { message: 'Valuation is required' }),
+    preMoneyValuation: z.coerce.number().min(0, { message: 'Valuation is required' }),
   }),
   investments: z.array(
     z.object({
@@ -83,7 +83,7 @@ export default function EventRaiseARound({
         name: '',
         type: RoundType.SERIES_A,
         date: formatDate(new Date()),
-        valuation: Number(businessInfo?.valuation ?? 0),
+        preMoneyValuation: Number(businessInfo?.postMoneyValuation ?? 0),
       },
       investments: [
         {
@@ -100,7 +100,7 @@ export default function EventRaiseARound({
 
   useEffect(() => {
     if (businessInfo) {
-      form.setValue('round.valuation', Number(businessInfo.valuation ?? 0));
+      form.setValue('round.preMoneyValuation', Number(businessInfo.postMoneyValuation ?? 0));
     }
   }, [businessInfo]);
 
@@ -130,6 +130,7 @@ export default function EventRaiseARound({
   const onSubmit = (values: z.infer<typeof formSchema>) => {
     raiseMutation.mutate(values);
     setIsDialogOpen(false);
+    form.reset();
   };
 
   const stakeholdersMinQuery = useQuery({
@@ -248,7 +249,7 @@ export default function EventRaiseARound({
                     />
                     <FormField
                       control={form.control}
-                      name="round.valuation"
+                      name="round.preMoneyValuation"
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>Pre Money Valuation</FormLabel>
@@ -261,8 +262,8 @@ export default function EventRaiseARound({
                       )}
                     />
                     <RoundMetrics
-                      oldValuation={Number(businessInfo?.valuation ?? 0)}
-                      preMoneyValuation={Number(form.watch('round.valuation') ?? 0)}
+                      oldValuation={Number(businessInfo?.postMoneyValuation ?? 0)}
+                      preMoneyValuation={Number(form.watch('round.preMoneyValuation') ?? 0)}
                       investment={form.watch('investments').reduce((acc, x) => acc + Number(x.amount), 0)}
                       totalShares={Number(businessInfo?.totalShares ?? 0)}
                       balanceShares={
@@ -695,21 +696,21 @@ function RoundMetrics(props: {
         <div className="mb-1 font-medium text-foreground text-sm">Post Money Valuation</div>
         <div className="text-md">
           <div className={`font-medium text-xl ${growth >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-            {postMoneyValuation.toLocaleString()}
+            {formatCurrency(postMoneyValuation)}
           </div>
         </div>
       </div>
       <div>
         <div className="mb-1 font-medium text-foreground text-sm">Total Shares</div>
         <div className="text-md">
-          <div className={`font-medium text-xl `}>{props.totalShares.toLocaleString()}</div>
+          <div className={`font-medium text-xl `}>{formatNumber(props.totalShares)}</div>
         </div>
       </div>
 
       <div>
         <div className="mb-1 font-medium text-foreground text-sm">Balance Shares</div>
         <div className="text-md">
-          <div className={`font-medium text-xl `}>{props.balanceShares.toLocaleString()}</div>
+          <div className={`font-medium text-xl `}>{formatNumber(props.balanceShares)}</div>
         </div>
       </div>
     </>

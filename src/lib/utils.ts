@@ -7,15 +7,18 @@ export function cn(...inputs: ClassValue[]) {
 
 export const formatCurrency = (amount?: number) => {
   if (amount === undefined) return 'N/A';
-  return new Intl.NumberFormat('en-US', {
+  return new Intl.NumberFormat('en-IN', {
     style: 'currency',
-    currency: 'USD',
-    maximumFractionDigits: 0,
-  }).format(amount);
+    currency: 'INR',
+    maximumFractionDigits: 2,
+    currencyDisplay: 'symbol',
+  })
+    .format(amount)
+    .replace(/^₹/, '₹ ');
 };
 
 export const formatNumber = (num: number) => {
-  return new Intl.NumberFormat('en-US').format(num);
+  return new Intl.NumberFormat('en-IN').format(num);
 };
 
 export const formatEnum = (enumValue: string) => {
@@ -25,9 +28,18 @@ export const formatEnum = (enumValue: string) => {
     .join(' ');
 };
 export const formatDate = (date: Date) => {
-  return new Intl.DateTimeFormat('en-US', {
+  return new Intl.DateTimeFormat('en-IN', {
     year: 'numeric',
     month: '2-digit',
     day: '2-digit',
-  }).format(date);
+  })
+    .format(date)
+    .split('/')
+    .reverse()
+    .join('-');
+};
+
+export const formatDateLong = (dateString: string) => {
+  const date = new Date(dateString);
+  return new Intl.DateTimeFormat('en-IN', { year: 'numeric', month: 'short', day: 'numeric' }).format(date);
 };

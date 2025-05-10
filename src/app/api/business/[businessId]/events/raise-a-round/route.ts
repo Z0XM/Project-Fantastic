@@ -10,7 +10,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ bus
       name: string;
       type: RoundType;
       date: string;
-      valuation: number;
+      preMoneyValuation: number;
     };
     investments: {
       stakeholder: {
@@ -47,15 +47,20 @@ export async function POST(request: Request, { params }: { params: Promise<{ bus
     const balanceShares = Number(businessInfo?.balanceShares ?? 0);
     const totalShares = Number(businessInfo?.totalShares ?? 0);
     const sharesIssued = investments.reduce((acc, investment) => acc + investment.shares, 0);
+    const sharesDiluted = dilutions.reduce((acc, dilusion) => acc + dilusion.shares, 0);
+
+    const postMoneyValuation =
+      round.preMoneyValuation + investments.reduce((acc, investment) => acc + investment.amount, 0);
 
     await tx.businessEvents.create({
       data: {
         roundId: roundDb.id,
         businessId,
         createdAt,
-        balanceShares: balanceShares - sharesIssued,
+        balanceShares: balanceShares - sharesIssued + sharesDiluted,
         totalShares: totalShares,
-        valuation: round.valuation,
+        preMoneyValuation: round.preMoneyValuation,
+        postMoneyValuation: postMoneyValuation,
       },
     });
 

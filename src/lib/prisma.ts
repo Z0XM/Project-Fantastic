@@ -8,5 +8,10 @@ config();
 
 // Initialize a new PrismaClient instance with Accelerate extension
 // Accelerate provides edge-optimized database access with better performance
-export const prisma = new PrismaEdge({ datasourceUrl: process.env.DATABASE_URL }).$extends(withAccelerate());
+export const prisma = new PrismaEdge({
+  datasourceUrl: process.env.DATABASE_URL,
+  transactionOptions: {
+    timeout: 15000,
+  },
+}).$extends(withAccelerate());
 // export const prisma = new PrismaBase({ datasourceUrl: process.env.DATABASE_URL });

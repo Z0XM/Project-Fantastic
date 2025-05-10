@@ -24,7 +24,7 @@ export default function BusinessPage() {
             <div className="font-medium">Last Updated</div>
             <div className="text-muted-foreground">
               {business
-                ? new Date(business.updatedAt).toLocaleDateString('en-US', {
+                ? new Date(business.updatedAt).toLocaleDateString('en-IN', {
                     month: 'short',
                     day: 'numeric',
                     year: 'numeric',

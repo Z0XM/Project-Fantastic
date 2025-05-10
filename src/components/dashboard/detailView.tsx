@@ -1,8 +1,8 @@
-import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { capTable } from './data';
+import { formatCurrency, formatDateLong, formatNumber } from '@/lib/utils';
 
 interface DetailViewProps {
   activeTab: 'shareholders' | 'rounds';
@@ -10,28 +10,6 @@ interface DetailViewProps {
 
 export default function DetailView({ activeTab }: DetailViewProps) {
   const { shareholders, rounds } = capTable;
-
-  // Format currency for display
-  const formatCurrency = (value?: number) => {
-    if (value === undefined) return '-';
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      notation: 'compact',
-      maximumFractionDigits: 1,
-    }).format(value);
-  };
-
-  // Format date for display
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return new Intl.DateTimeFormat('en-US', { year: 'numeric', month: 'short', day: 'numeric' }).format(date);
-  };
-
-  // Format number with commas
-  const formatNumber = (value: number) => {
-    return new Intl.NumberFormat().format(value);
-  };
 
   // Badge color based on shareholder type
   const getShareholderBadgeColor = (type: string) => {
@@ -77,7 +55,7 @@ export default function DetailView({ activeTab }: DetailViewProps) {
                     </TableCell>
                     <TableCell>{formatNumber(shareholder.shares)}</TableCell>
                     <TableCell>{shareholder.percentage}%</TableCell>
-                    <TableCell>{formatDate(shareholder.joinDate)}</TableCell>
+                    <TableCell>{formatDateLong(shareholder.joinDate)}</TableCell>
                     <TableCell>{formatCurrency(shareholder.invested)}</TableCell>
                   </TableRow>
                 ))}
@@ -101,7 +79,7 @@ export default function DetailView({ activeTab }: DetailViewProps) {
                 {rounds.map((round) => (
                   <TableRow key={round.id}>
                     <TableCell className="font-medium">{round.name}</TableCell>
-                    <TableCell>{formatDate(round.date)}</TableCell>
+                    <TableCell>{formatDateLong(round.date)}</TableCell>
                     <TableCell>{formatCurrency(round.amount)}</TableCell>
                     <TableCell>{formatCurrency(round.valuation)}</TableCell>
                     <TableCell>{formatNumber(round.shares)}</TableCell>

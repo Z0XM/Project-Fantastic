@@ -2,24 +2,10 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { capTable } from './data';
+import { formatCurrency, formatDateLong } from '@/lib/utils';
 
 export default function RoundHistory() {
   const rounds = capTable.rounds;
-
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      notation: 'compact',
-      maximumFractionDigits: 1,
-    }).format(value);
-  };
-
-  // Format date for display
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return new Intl.DateTimeFormat('en-US', { month: 'short', year: '2-digit' }).format(date);
-  };
 
   // Sort rounds by date
   const sortedRounds = [...rounds].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
@@ -29,7 +15,7 @@ export default function RoundHistory() {
     name: round.name,
     amount: round.amount,
     valuation: round.valuation,
-    date: formatDate(round.date),
+    date: formatDateLong(round.date),
   }));
 
   // Custom tooltip component

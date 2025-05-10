@@ -42,7 +42,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ bus
           createdAt,
           balanceShares: balanceShares + addedShares,
           totalShares: totalShares + addedShares,
-          valuation,
+          preMoneyValuation: valuation,
+          postMoneyValuation: valuation,
         },
       });
     } else if (type === 'STOCK_SPLIT') {
@@ -53,7 +54,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ bus
           createdAt,
           balanceShares: balanceShares * (1 + (stockSplitRatio ?? 0)),
           totalShares: totalShares * (1 + (stockSplitRatio ?? 0)),
-          valuation,
+          preMoneyValuation: valuation,
+          postMoneyValuation: valuation,
         },
       });
 
