@@ -4,6 +4,8 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useRef } from 'react';
 import { Provider } from 'react-redux';
 import { makeStore, AppStore } from '../lib/store';
+import { TooltipProvider } from './ui/tooltip';
+import { Toaster } from './ui/sonner';
 
 const queryClient = new QueryClient();
 
@@ -15,7 +17,10 @@ export default function Providers({ children }: { children: React.ReactNode }) {
   }
   return (
     <Provider store={storeRef.current}>
-      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+      <TooltipProvider>
+        <Toaster />
+        <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+      </TooltipProvider>
     </Provider>
   );
 }

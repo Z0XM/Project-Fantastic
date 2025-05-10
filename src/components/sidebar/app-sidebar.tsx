@@ -1,23 +1,10 @@
 'use client';
 
 import * as React from 'react';
-import {
-  AudioWaveform,
-  BookOpen,
-  Bot,
-  Command,
-  Frame,
-  GalleryVerticalEnd,
-  Map,
-  PieChart,
-  Settings2,
-  SquareTerminal,
-} from 'lucide-react';
+import { BookOpen, Frame, GalleryVerticalEnd, Map, PieChart, Settings2, SquareTerminal } from 'lucide-react';
 
-import { NavMain } from './nav-main';
-import { NavProjects } from './nav-projects';
-import { NavUser } from './nav-user';
-import { TeamSwitcher } from './team-switcher';
+import { NavSuper } from './nav-super';
+import { NavMagical } from './nav-magical';
 import {
   Sidebar,
   SidebarContent,
@@ -27,162 +14,131 @@ import {
   SidebarRail,
 } from '@/components/ui/sidebar';
 import { useAppSelector } from '@/hooks/store';
-
-// This is sample data.
-const data = {
-  user: {
-    name: 'shadcn',
-    email: 'm@example.com',
-    avatar: '/avatars/shadcn.jpg',
-  },
-  teams: [
-    {
-      name: 'Acme Inc',
-      logo: GalleryVerticalEnd,
-      plan: 'Enterprise',
-    },
-    {
-      name: 'Acme Corp.',
-      logo: AudioWaveform,
-      plan: 'Startup',
-    },
-    {
-      name: 'Evil Corp.',
-      logo: Command,
-      plan: 'Free',
-    },
-  ],
-  navMain: [
-    {
-      title: 'Playground',
-      url: '#',
-      icon: SquareTerminal,
-      isActive: true,
-      items: [
-        {
-          title: 'History',
-          url: '#',
-        },
-        {
-          title: 'Starred',
-          url: '#',
-        },
-        {
-          title: 'Settings',
-          url: '#',
-        },
-      ],
-    },
-    {
-      title: 'Models',
-      url: '#',
-      icon: Bot,
-      items: [
-        {
-          title: 'Genesis',
-          url: '#',
-        },
-        {
-          title: 'Explorer',
-          url: '#',
-        },
-        {
-          title: 'Quantum',
-          url: '#',
-        },
-      ],
-    },
-    {
-      title: 'Documentation',
-      url: '#',
-      icon: BookOpen,
-      items: [
-        {
-          title: 'Introduction',
-          url: '#',
-        },
-        {
-          title: 'Get Started',
-          url: '#',
-        },
-        {
-          title: 'Tutorials',
-          url: '#',
-        },
-        {
-          title: 'Changelog',
-          url: '#',
-        },
-      ],
-    },
-    {
-      title: 'Settings',
-      url: '#',
-      icon: Settings2,
-      items: [
-        {
-          title: 'General',
-          url: '#',
-        },
-        {
-          title: 'Team',
-          url: '#',
-        },
-        {
-          title: 'Billing',
-          url: '#',
-        },
-        {
-          title: 'Limits',
-          url: '#',
-        },
-      ],
-    },
-  ],
-  projects: [
-    {
-      name: 'Design Engineering',
-      url: '#',
-      icon: Frame,
-    },
-    {
-      name: 'Sales & Marketing',
-      url: '#',
-      icon: PieChart,
-    },
-    {
-      name: 'Travel',
-      url: '#',
-      icon: Map,
-    },
-  ],
-};
+import { Avatar, AvatarFallback, AvatarImage } from '@radix-ui/react-avatar';
+import Link from 'next/link';
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+  const user = {
+    name: 'Admin',
+    email: 'admin@thisisfake.com',
+    avatar: '/avatars/shadcn.jpg',
+  };
   const business = useAppSelector((state) => state.baseApp.business);
 
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
-        <SidebarMenuButton
-          size="lg"
-          className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
-        >
-          <div className="flex justify-center items-center bg-sidebar-primary rounded-lg size-8 aspect-square text-sidebar-primary-foreground">
-            <GalleryVerticalEnd className="size-4" />
-          </div>
-          <div className="flex-1 grid text-sm text-left leading-tight">
-            <span className="font-semibold truncate">{business?.name}</span>
-            <span className="text-xs truncate">TO DO</span>
-          </div>
-        </SidebarMenuButton>
+        <Link href="/">
+          <SidebarMenuButton
+            size="lg"
+            className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+          >
+            <div className="flex justify-center items-center bg-sidebar-primary rounded-lg size-8 aspect-square text-sidebar-primary-foreground">
+              <GalleryVerticalEnd className="size-4" />
+            </div>
+            <div className="flex-1 grid text-sm text-left leading-tight">
+              <span className="font-semibold truncate">{business?.name}</span>
+              <span className="text-xs truncate">Minimizing Complexities</span>
+            </div>
+          </SidebarMenuButton>
+        </Link>
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={data.navMain} />
-        <NavProjects projects={data.projects} />
+        <NavSuper
+          items={[
+            {
+              title: 'Multiverses',
+              url: '#',
+              icon: SquareTerminal,
+              isActive: true,
+              items: [
+                {
+                  title: 'Visit A Universe',
+                  url: '#',
+                },
+                {
+                  title: 'Create A Universe',
+                  url: '#',
+                },
+                {
+                  title: 'Compare Universes',
+                  url: '#',
+                },
+              ],
+            },
+            {
+              title: 'Dashboards',
+              url: '#',
+              icon: BookOpen,
+              isActive: true,
+              items: [
+                {
+                  title: 'Overview',
+                  url: business ? `/business/${business.id}/dashboards/overview` : '#',
+                },
+                {
+                  title: 'Timelines',
+                  url: '#',
+                },
+                {
+                  title: 'Advanced Analytics',
+                  url: '#',
+                },
+              ],
+            },
+            {
+              title: 'Management',
+              url: '#',
+              icon: Settings2,
+              isActive: true,
+              items: [
+                {
+                  title: 'Events',
+                  url: business ? `/business/${business.id}/events` : '#',
+                },
+                {
+                  title: 'Create Event',
+                  url: business ? `/business/${business.id}/events/create` : '#',
+                },
+                { title: 'Stakeholders', url: business ? `/business/${business.id}/stakeholders` : '#' },
+              ],
+            },
+          ]}
+        />
+        <NavMagical
+          projects={[
+            {
+              name: 'Create Future Plans',
+              url: '#',
+              icon: Frame,
+            },
+            {
+              name: 'Generate Investor Deck',
+              url: '#',
+              icon: PieChart,
+            },
+            {
+              name: 'Sumarize Analytics',
+              url: '#',
+              icon: Map,
+            },
+          ]}
+        />
       </SidebarContent>
       <SidebarFooter>
-        <NavUser user={data.user} />
+        <SidebarMenuButton
+          size="lg"
+          className="flex items-center gap-2 data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+        >
+          <Avatar className="rounded-lg w-8 h-8">
+            <AvatarImage src={user.avatar} alt={user.name} />
+            <AvatarFallback className="rounded-lg">AD</AvatarFallback>
+          </Avatar>
+          <div className="flex-1 grid text-sm text-left leading-tight">
+            <span className="font-semibold truncate">{user.name}</span>
+            <span className="text-xs truncate">{user.email}</span>
+          </div>
+        </SidebarMenuButton>
       </SidebarFooter>
       <SidebarRail />
     </Sidebar>

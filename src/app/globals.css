@@ -42,6 +42,20 @@
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
+  --color-pastel-blue: #d3e4fd;
+  --color-pastel-green: #f2fce2;
+  --color-pastel-peach: #fde1d3;
+  --color-pastel-yellow: #fef7cd;
+  --color-pastel-purple: #e5deff;
+  --color-pastel-pink: #ffdee2;
+  --color-pastel-gray: #f1f0fb;
+  --color-pastel-mint: #dbf4e8;
+  --color-pastel-lavender: #e6e6fa;
+  --color-pastel-coral: #ffcdc2;
+  --color-pastel-teal: #b2e4e4;
+  --color-pastel-sage: #d4e2d4;
+  --color-pastel-rose: #ffd1dc;
+  --color-pastel-lilac: #e8cfff;
 }
 
 :root {
@@ -64,11 +78,11 @@
   --border: oklch(0.92 0.004 286.32);
   --input: oklch(0.92 0.004 286.32);
   --ring: oklch(0.723 0.219 149.579);
-  --chart-1: oklch(0.646 0.222 41.116);
-  --chart-2: oklch(0.6 0.118 184.704);
-  --chart-3: oklch(0.398 0.07 227.392);
-  --chart-4: oklch(0.828 0.189 84.429);
-  --chart-5: oklch(0.769 0.188 70.08);
+  --chart-1: 173 58% 39%;
+  --chart-2: 12 76% 61%;
+  --chart-3: 197 37% 24%;
+  --chart-4: 43 74% 66%;
+  --chart-5: 27 87% 67%;
   --sidebar: oklch(0.985 0 0);
   --sidebar-foreground: oklch(0.141 0.005 285.823);
   --sidebar-primary: oklch(0.723 0.219 149.579);
@@ -98,12 +112,11 @@
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 15%);
   --ring: oklch(0.527 0.154 150.069);
-  --chart-1: oklch(0.488 0.243 264.376);
-  --chart-2: oklch(0.696 0.17 162.48);
-  --chart-3: oklch(0.769 0.188 70.08);
-  --chart-4: oklch(0.627 0.265 303.9);
-  --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: oklch(0.21 0.006 285.885);
+  --chart-1: 220 70% 50%;
+  --chart-5: 160 60% 45%;
+  --chart-3: 30 80% 55%;
+  --chart-4: 280 65% 60%;
+  --chart-2: 340 75% 55%;
   --sidebar-foreground: oklch(0.985 0 0);
   --sidebar-primary: oklch(0.696 0.17 162.48);
   --sidebar-primary-foreground: oklch(0.393 0.095 152.535);
@@ -124,4 +137,12 @@
   button {
     @apply cursor-pointer;
   }
+
+  /* ::-webkit-scrollbar {
+    @apply bg-red-400 w-[5px];
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-green-400 rounded-full;
+  } */
 }

@@ -47,10 +47,9 @@ model Rounds {
     businessId String
     business   Business  @relation(fields: [businessId], references: [id])
 
-    businessEvents         BusinessEvents?
-    StakeholderEvents      StakeholderEvents[]
-    investments            Investments[]
-    WarrantAndOptionShares WarrantAndOptionShares[]
+    businessEvents    BusinessEvents?
+    stakeholderEvents StakeholderEvents[]
+    investments       Investments[]
 }
 
 // Tracks business valuation and share information for each funding round
@@ -164,7 +163,6 @@ model WarrantAndOptionShares {
     config        Json?
     roundId       String
 
-    round       Rounds       @relation(fields: [roundId], references: [id])
     stakeholder Stakeholders @relation(fields: [stakeholderId], references: [id])
     business    Business     @relation(fields: [businessId], references: [id])
 
@@ -188,6 +186,7 @@ model Investments {
     stakeholder Stakeholders @relation(fields: [stakeholderId], references: [id])
     round       Rounds       @relation(fields: [roundId], references: [id])
     contracts   Contracts[]
+    notes       String?      @db.Text
 
     @@unique([stakeholderId, roundId])
 }
@@ -201,6 +200,8 @@ model Contracts {
     contractUrl  String?          @db.Text
     contractJson Json?
     investmentId String
+    title        String
+    description  String?          @db.Text
 
     investment        Investments         @relation(fields: [investmentId], references: [id])
     stakeHolderEvents StakeholderEvents[]
