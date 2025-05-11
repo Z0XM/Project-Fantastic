@@ -18,6 +18,8 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { formatCurrency, formatEnum, formatNumber } from '@/lib/utils';
 import { setMultipleContext } from '@/lib/slices/aiContext';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Badge } from '@/components/ui/badge';
 
 export default function StakeholdersPpage() {
   const { businessId } = useParams();
@@ -59,6 +61,23 @@ export default function StakeholdersPpage() {
             key: 'totalOwnedShares',
             contextString: `${data.totalOwnedShares} is the total no. of shares with stakeholders`,
             rawValue: data.totalOwnedShares,
+          },
+          {
+            key: 'totalShares',
+            contextString: `${Number(businessInfo?.totalShares ?? 0)} is the total no. of shares in the company`,
+            rawValue: Number(businessInfo?.totalShares ?? 0),
+          },
+          {
+            key: 'balanceShares',
+            contextString: `${Number(
+              businessInfo?.balanceShares ?? 0
+            )} is the total no. of balance shares in the company`,
+            rawValue: Number(businessInfo?.balanceShares ?? 0),
+          },
+          {
+            key: 'currentValuation',
+            contextString: `${Number(businessInfo?.postMoneyValuation ?? 0)} is the current valuation of the company`,
+            rawValue: Number(businessInfo?.postMoneyValuation ?? 0),
           },
           {
             key: 'totalInvestment',
@@ -153,7 +172,6 @@ export default function StakeholdersPpage() {
           <UserPlus className="mr-2 w-4 h-4" /> Add Stakeholder
         </Button>
       </div>
-
       <div className="gap-6 grid grid-cols-1 md:grid-cols-3 mb-6">
         <Card className="bg-pastel-green">
           <CardHeader className="pb-2">
@@ -172,11 +190,13 @@ export default function StakeholdersPpage() {
           <CardHeader className="pb-2">
             <CardTitle className="flex items-center font-medium text-sm">
               <Coins className="mr-2 w-4 h-4" />
-              Total Shares
+              Issued Shares / Total Shares
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="font-bold text-2xl">{formatNumber(totalOwnedShares)}</div>
+            <div className="font-bold text-2xl">
+              {formatNumber(Number(totalOwnedShares))} / {formatNumber(Number(businessInfo?.totalShares))}
+            </div>
             <p className="mt-1 text-muted-foreground text-xs">Issued business shares</p>
           </CardContent>
         </Card>
@@ -207,9 +227,9 @@ export default function StakeholdersPpage() {
                 <TableHead>Name</TableHead>
                 <TableHead>Type</TableHead>
                 <TableHead className="text-right">Total Investment</TableHead>
+                <TableHead className="text-right">Total Shares</TableHead>
                 <TableHead className="text-right">Equity %</TableHead>
                 <TableHead className="text-right">Ownership %</TableHead>
-                {/* <TableHead className="text-right">Ownership Shares</TableHead> */}
                 <TableHead className="text-right">Promised Shares</TableHead>
                 <TableHead className="text-right">Current Stock Value</TableHead>
                 {/* <TableHead className="text-right">Join Date</TableHead> */}
@@ -222,7 +242,35 @@ export default function StakeholdersPpage() {
                   className="hover:bg-muted/30 transition-colors cursor-pointer"
                   onClick={() => {}}
                 >
-                  <TableCell className="font-medium">{stakeholder.name}</TableCell>
+                  <TableCell className="flex justify-between gap-2 font-medium">
+                    {stakeholder.name}
+                    {stakeholder.hasExited && (
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Badge
+                              variant="outline"
+                              className="bg-destructive/10 border-destructive/20 text-destructive"
+                              onClick={(e) => {
+                                // Prevent row click event from firing
+                                e.stopPropagation();
+                              }}
+                            >
+                              Exited
+                            </Badge>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <div className="text-sm">
+                              <p className="font-semibold">Exit Details</p>
+                              <p className="text-xs">
+                                Amount: {formatCurrency(Number(stakeholder.exitedAtPrice ?? 0))}
+                              </p>
+                            </div>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    )}
+                  </TableCell>
                   <TableCell>
                     <span
                       className={`
@@ -237,6 +285,7 @@ export default function StakeholdersPpage() {
                     </span>
                   </TableCell>
                   <TableCell className="text-right">{formatCurrency(stakeholder.totalInvestment)}</TableCell>
+                  <TableCell className="text-right">{formatNumber(stakeholder.ownedShares)}</TableCell>
                   <TableCell className="text-right">
                     {formatNumber((stakeholder.ownedShares / totalOwnedShares) * 100)} %
                   </TableCell>

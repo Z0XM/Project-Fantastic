@@ -17,7 +17,14 @@ export async function GET(request: Request, { params }: { params: Promise<{ busi
       stakeholderEvents: true,
       warrantandOptionShares: { include: { contracts: true } },
     },
+    orderBy: {
+      user: {
+        name: 'asc',
+      },
+    },
   });
+
+  // console.log('stakeholders', JSON.stringify(stakeholders, null, 2));
 
   const formattedStakeholders = stakeholders.map((stakeholder) => ({
     id: stakeholder.id,
@@ -26,6 +33,8 @@ export async function GET(request: Request, { params }: { params: Promise<{ busi
     type: stakeholder.type,
     config: stakeholder.config,
     createdAt: stakeholder.createdAt,
+    hasExited: stakeholder.hasExited,
+    exitedAtPrice: stakeholder.exitedAtPrice,
     totalInvestment:
       stakeholder.investments.reduce((acc, investment) => acc + Number(investment.amount), 0) +
       stakeholder.investments.reduce(

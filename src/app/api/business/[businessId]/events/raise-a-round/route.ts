@@ -128,6 +128,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ bus
                   shareType: ShareType.COMMON,
                   createdAt,
                   contractType: contract.contractType ?? undefined,
+                  contractInvestment: contract.investedAmount ?? undefined,
                 })),
               },
             },
@@ -143,7 +144,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ bus
 
         await tx.stakeholderEvents.createMany({
           data: contractsDb
-            .filter((x) => x.shares && x.shares > 0)
+            .filter((x) => x.shares && x.shares > 0 && x.contractType === ContractType.NONE)
             .map((contract) => ({
               roundId: investmentsDb.roundId,
               stakeholderId: investmentsDb.stakeholderId,

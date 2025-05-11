@@ -1,10 +1,11 @@
 import { prisma } from '@/lib/prisma';
+import { EventType } from '@prisma/client';
 
 export async function GET(request: Request, { params }: { params: Promise<{ businessId: string }> }) {
   const { businessId } = await params;
   const stakeholders = await prisma.stakeholders.findMany({
     where: { businessId: businessId },
-    include: { user: true, _count: { select: { stakeholderEvents: true } } },
+    include: { user: true, stakeholderEvents: true },
   });
 
   const formattedStakeholders = stakeholders.map((stakeholder) => ({
@@ -14,7 +15,11 @@ export async function GET(request: Request, { params }: { params: Promise<{ busi
     type: stakeholder.type,
     config: stakeholder.config,
     createdAt: stakeholder.createdAt,
-    hasStakes: stakeholder._count.stakeholderEvents > 0,
+    ownershipShares: stakeholder.stakeholderEvents.reduce(
+      (acc, event) => acc + (event.eventType === EventType.OPTION ? 0 : Number(event.shares)),
+      0
+    ),
+    totalShares: stakeholder.stakeholderEvents.reduce((acc, event) => acc + Number(event.shares), 0),
   }));
   return Response.json(formattedStakeholders);
 }

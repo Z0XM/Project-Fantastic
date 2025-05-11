@@ -125,8 +125,8 @@ export default function IssueContracts({
       Number(values.round.shares ?? 0) +
       Number(values.dilutions.reduce((acc, dilution) => acc + Number(dilution.shares), 0));
 
-    if (balanceShares < 0) {
-      toast.error('Shares allocated exceed available shares!');
+    if (balanceShares !== 0) {
+      toast.error('Non-zero Share Balance!');
       return;
     }
     raiseMutation.mutate(values);
@@ -144,7 +144,7 @@ export default function IssueContracts({
     queryFn: async () => {
       const response = await fetch(`/api/business/${businessId}/stakeholders/min`);
       const data = await response.json();
-      return data as (Stakeholders & { name: string; hasStakes: boolean })[];
+      return data as (Stakeholders & { name: string; ownershipShares: number })[];
     },
   });
 
@@ -355,11 +355,20 @@ export default function IssueContracts({
                               <FormItem>
                                 <FormLabel>Name</FormLabel>
                                 <FormControl>
-                                  <Select onValueChange={field.onChange} {...field}>
+                                  <Select
+                                    onValueChange={(value) => {
+                                      form.setValue(
+                                        `dilutions.${index}.shares`,
+                                        stakeholders.find((x) => x.id === value)?.ownershipShares ?? 0
+                                      );
+                                      field.onChange(value);
+                                    }}
+                                    {...field}
+                                  >
                                     <SelectTrigger className="col-span-3">
                                       <SelectValue
                                         placeholder={
-                                          stakeholders.filter((x) => x.hasStakes).length > 0
+                                          stakeholders.filter((x) => x.ownershipShares > 0).length > 0
                                             ? 'Select Stakeholder'
                                             : 'Stakeholders unavailable'
                                         }
@@ -375,7 +384,7 @@ export default function IssueContracts({
                                               .map((dil) => dil.stakeholderId)
                                               .includes(sh.id)
                                         )
-                                        .filter((sh) => sh.hasStakes)
+                                        .filter((sh) => sh.ownershipShares > 0)
                                         .sort((a, b) => a.name.localeCompare(b.name))
                                         .map((sh) => (
                                           <SelectItem key={sh.id} value={sh.id}>

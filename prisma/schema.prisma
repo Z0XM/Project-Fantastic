@@ -36,6 +36,7 @@ enum RoundType {
     NEW_SHARES
     STOCK_SPLIT
     CONTRACT_ISSUE
+    EXIT
 }
 
 // Represents funding rounds with their type and associated events
@@ -94,13 +95,15 @@ model Users {
 
 // Represents investors or shareholders in the business
 model Stakeholders {
-    id         String          @id @default(uuid())
-    createdAt  DateTime        @default(now())
-    updatedAt  DateTime        @updatedAt
-    userId     String
-    businessId String
-    type       StakeholderType
-    config     Json?
+    id            String          @id @default(uuid())
+    createdAt     DateTime        @default(now())
+    updatedAt     DateTime        @updatedAt
+    userId        String
+    businessId    String
+    type          StakeholderType
+    config        Json?
+    hasExited     Boolean         @default(false)
+    exitedAtPrice Decimal?
 
     user                   Users                    @relation(fields: [userId], references: [id])
     business               Business                 @relation(fields: [businessId], references: [id])
@@ -132,6 +135,7 @@ enum EventType {
     CONVERTIBLE_NOTE
     SAFE
     DILUTION
+    EXIT
 }
 
 enum ContractType {

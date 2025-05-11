@@ -1,13 +1,14 @@
 'use client';
 
 import AllocateShares from '@/components/events/allocate-shares';
+import GrantExit from '@/components/events/grant-exit';
 import IssueContracts from '@/components/events/issue-contract';
 import EventRaiseARound from '@/components/events/raise-a-round';
 import WarrantNOptions from '@/components/events/warrant-n-options';
 import { Button } from '@/components/ui/button';
 
 import { Card, CardContent } from '@/components/ui/card';
-import { ArrowUp, Award, FileText, Users } from 'lucide-react';
+import { ArrowUp, Award, ExternalLinkIcon, FileText, Users } from 'lucide-react';
 import { useState } from 'react';
 
 const eventTypes = [
@@ -18,7 +19,6 @@ const eventTypes = [
     description: 'Create a new funding round and allocate shares to investors',
     color: 'bg-pastel-purple', // Soft Purple
     iconColor: 'text-purple-600',
-    action: '/event/create?type=round',
   },
   {
     icon: Award,
@@ -27,7 +27,6 @@ const eventTypes = [
     description: 'Issue stock options or warrants to emplosyees or advisors',
     color: 'bg-pastel-pink', // Soft Pink
     iconColor: 'text-pink-500',
-    action: '/event/create?type=wno',
   },
   {
     icon: Users,
@@ -36,7 +35,6 @@ const eventTypes = [
     description: 'Create and allocate new shares to existing or new shareholders',
     color: 'bg-pastel-green', // Soft Green
     iconColor: 'text-green-600',
-    action: '/event/create?type=shares',
   },
   {
     icon: FileText,
@@ -45,7 +43,14 @@ const eventTypes = [
     description: 'Process existing agreements and update your cap table',
     color: 'bg-pastel-blue', // Soft Blue
     iconColor: 'text-blue-500',
-    action: '/event/create?type=contract',
+  },
+  {
+    icon: ExternalLinkIcon,
+    title: 'Grant EXit',
+    type: 'grant-exit',
+    description: 'Grant exit to existing shareholders',
+    color: 'bg-pastel-rose', // Soft Blue
+    iconColor: 'text-pink-500',
   },
 ];
 
@@ -111,6 +116,9 @@ export default function EventCreatePage() {
       ) : null}
       {event?.type === 'issue-contracts' ? (
         <IssueContracts backgroundColor={event?.color} isDialogOpen={isDialogOpen} setIsDialogOpen={setIsDialogOpen} />
+      ) : null}
+      {event?.type === 'grant-exit' ? (
+        <GrantExit backgroundColor={event?.color} isDialogOpen={isDialogOpen} setIsDialogOpen={setIsDialogOpen} />
       ) : null}
     </main>
   );
