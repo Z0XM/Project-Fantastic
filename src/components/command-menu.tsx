@@ -10,11 +10,17 @@ import {
 } from '@/components/ui/command';
 import { useEffect, useState } from 'react';
 
+interface Message {
+  role: 'user' | 'assistant';
+  content: string;
+}
+
 export function CommandMenu() {
   const [open, setOpen] = useState(false);
   const [prompt, setPrompt] = useState('');
-  const [response, setResponse] = useState<string | null>(null);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
@@ -37,27 +43,41 @@ export function CommandMenu() {
   // Call the backend API
   const handleSubmit = async () => {
     setLoading(true);
-    setResponse(null);
+    setError(null);
+    
+    // Add user message to the conversation
+    const userMessage: Message = { role: 'user', content: prompt };
+    setMessages(prev => [...prev, userMessage]);
+    
     try {
       const res = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          messages: [{ role: 'user', content: prompt }],
+          messages: [...messages, userMessage],
         }),
       });
+      
       const data = await res.json();
 
-      // Handle error from backend
-      if (data.error) {
-        setResponse(`Error: ${data.error}`);
-      } else if (data.content && data.content.trim()) {
-        setResponse(data.content);
-      } else {
-        setResponse('No response from AI. (It may have been filtered or empty.)');
+      if (!data.success) {
+        throw new Error(data.error || 'Failed to get response from AI');
       }
-    } catch {
-      setResponse('Error fetching response');
+
+      // Add assistant's response to the conversation
+      if (data.response?.content) {
+        const assistantMessage: Message = {
+          role: 'assistant',
+          content: data.response.content
+        };
+        setMessages(prev => [...prev, assistantMessage]);
+      }
+
+      // Clear the input
+      setPrompt('');
+      
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Error fetching response');
     } finally {
       setLoading(false);
     }
@@ -80,11 +100,17 @@ export function CommandMenu() {
           <CommandItem>Calculator</CommandItem>
         </CommandGroup>
         {loading && <div className="p-4 text-sm text-muted-foreground">Loading...</div>}
-        {response && (
-          <div className="p-4 text-sm text-primary">
-            <strong>AI:</strong> {response}
+        {error && (
+          <div className="p-4 text-sm text-red-500">
+            <strong>Error:</strong> {error}
           </div>
         )}
+        {messages.map((message, index) => (
+          <div key={index} className="p-4 text-sm">
+            <strong>{message.role === 'user' ? 'You:' : 'AI:'}</strong>{' '}
+            {message.content}
+          </div>
+        ))}
       </CommandList>
     </CommandDialog>
   );
