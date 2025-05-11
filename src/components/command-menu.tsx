@@ -11,25 +11,17 @@ import {
 import { useAppSelector } from '@/hooks/store';
 import { useEffect, useState } from 'react';
 
-/**
- * A command menu component that provides a searchable command palette interface.
- * Can be opened with Cmd/Ctrl + K keyboard shortcut.
- *
- * @component
- * @example
- * ```tsx
- * <CommandMenu />
- * ```
- *
- * @returns A command dialog interface with search input and suggested commands
- *
- * @remarks
- * The component uses a keyboard shortcut listener (Cmd/Ctrl + K) to toggle visibility.
- * Contains a searchable input field and a list of command suggestions.
- * When no results match the search, displays "No results found."
- */
+interface Message {
+  role: 'user' | 'assistant';
+  content: string;
+}
+
 export function CommandMenu() {
   const [open, setOpen] = useState(false);
+  const [prompt, setPrompt] = useState('');
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
@@ -45,10 +37,64 @@ export function CommandMenu() {
   const aiContext = useAppSelector((state) => state.aiContext.value);
 
   const aicontextStrings = Object.values(aiContext).map((context) => context.contextString);
+  // Submit on Enter
+  const handleInputKeyDown = async (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' && prompt.trim()) {
+      await handleSubmit();
+    }
+  };
+
+  // Call the backend API
+  const handleSubmit = async () => {
+    setLoading(true);
+    setError(null);
+
+    // Add user message to the conversation
+    const userMessage: Message = { role: 'user', content: prompt };
+    setMessages((prev) => [...prev, userMessage]);
+
+    try {
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          messages: [...messages, userMessage],
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!data.success) {
+        throw new Error(data.error || 'Failed to get response from AI');
+      }
+
+      // Add assistant's response to the conversation
+      if (data.response?.content) {
+        const assistantMessage: Message = {
+          role: 'assistant',
+          content: data.response.content,
+        };
+        setMessages((prev) => [...prev, assistantMessage]);
+      }
+
+      // Clear the input
+      setPrompt('');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Error fetching response');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <CommandDialog open={open} onOpenChange={setOpen}>
-      <CommandInput placeholder="Type a command or search..." />
+      <CommandInput
+        placeholder="Type a prompt for AI..."
+        value={prompt}
+        onValueChange={setPrompt}
+        onKeyDown={handleInputKeyDown}
+        disabled={loading}
+      />
       <CommandList>
         <CommandEmpty>No results found.</CommandEmpty>
         <CommandGroup heading="Suggestions">
@@ -56,6 +102,17 @@ export function CommandMenu() {
           <CommandItem>Search Emoji</CommandItem>
           <CommandItem>Calculator</CommandItem>
         </CommandGroup>
+        {loading && <div className="p-4 text-muted-foreground text-sm">Loading...</div>}
+        {error && (
+          <div className="p-4 text-red-500 text-sm">
+            <strong>Error:</strong> {error}
+          </div>
+        )}
+        {messages.map((message, index) => (
+          <div key={index} className="p-4 text-sm">
+            <strong>{message.role === 'user' ? 'You:' : 'AI:'}</strong> {message.content}
+          </div>
+        ))}
       </CommandList>
     </CommandDialog>
   );
