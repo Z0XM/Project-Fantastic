@@ -4,7 +4,6 @@ import { Button } from '@/components/ui/button';
 import { Coins, DollarSign, UserPlus } from 'lucide-react';
 import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { capTable } from '@/components/dashboard/data';
 import { useAppDispatch, useAppSelector } from '@/hooks/store';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useParams } from 'next/navigation';
@@ -264,6 +263,29 @@ export default function StakeholdersPpage() {
                               <p className="font-semibold">Exit Details</p>
                               <p className="text-xs">
                                 Amount: {formatCurrency(Number(stakeholder.exitedAtPrice ?? 0))}
+                              </p>
+                              <p className="text-xs">
+                                {Number(stakeholder.exitedAtPrice ?? 0) > Number(stakeholder.totalInvestment) ? (
+                                  <>
+                                    <span>Profit: </span>{' '}
+                                    <span>
+                                      {((Number(stakeholder.exitedAtPrice ?? 0) - Number(stakeholder.totalInvestment)) *
+                                        100) /
+                                        Number(stakeholder.totalInvestment)}{' '}
+                                      %
+                                    </span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <span>Loss: </span>{' '}
+                                    <span>
+                                      {((Number(stakeholder.totalInvestment) - Number(stakeholder.exitedAtPrice ?? 0)) *
+                                        100) /
+                                        Number(stakeholder.totalInvestment)}{' '}
+                                      %
+                                    </span>
+                                  </>
+                                )}
                               </p>
                             </div>
                           </TooltipContent>
