@@ -59,6 +59,8 @@ export async function GET(request: Request, { params }: { params: Promise<{ busi
 
   const totalOwnedShares = formattedStakeholders.reduce((acc, stakeholder) => acc + Number(stakeholder.ownedShares), 0);
 
+  const totalInvestment = formattedStakeholders.reduce((acc, stakeholder) => acc + stakeholder.totalInvestment, 0);
+
   const result = {
     stakeholders: formattedStakeholders.map((x) => ({
       ...x,
@@ -67,6 +69,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ busi
     })),
     totalOwnershipShares,
     totalOwnedShares,
+    totalInvestment,
   };
 
   return Response.json(result);

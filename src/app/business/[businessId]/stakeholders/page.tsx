@@ -1,14 +1,14 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
-import { UserPlus } from 'lucide-react';
+import { Coins, DollarSign, UserPlus } from 'lucide-react';
 import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { capTable } from '@/components/dashboard/data';
-import { useAppSelector } from '@/hooks/store';
+import { useAppDispatch, useAppSelector } from '@/hooks/store';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useParams } from 'next/navigation';
-import { Stakeholders, StakeholderType, Users } from '@prisma/client';
+import { BusinessEvents, Stakeholders, StakeholderType, Users } from '@prisma/client';
 import Loading from '@/components/loading';
 import { useState } from 'react';
 import { toast } from 'sonner';
@@ -17,10 +17,23 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { formatCurrency, formatEnum, formatNumber } from '@/lib/utils';
+import { setMultipleContext } from '@/lib/slices/aiContext';
 
 export default function StakeholdersPpage() {
   const { businessId } = useParams();
   const business = useAppSelector((state) => state.baseApp.business);
+
+  const dispatch = useAppDispatch();
+
+  const businessInfoQuery = useQuery({
+    queryKey: ['businessInfo', businessId],
+    queryFn: async () => {
+      const response = await fetch(`/api/business/${businessId}/info`);
+      const data = await response.json();
+      return (data.businessInfo ?? null) as BusinessEvents | null;
+    },
+  });
+  const businessInfo = businessInfoQuery.data;
 
   const queryClient = useQueryClient();
 
@@ -29,9 +42,36 @@ export default function StakeholdersPpage() {
     queryFn: async () => {
       const response = await fetch(`/api/business/${businessId}/stakeholders`);
       const data = await response.json();
+
+      dispatch(
+        setMultipleContext([
+          {
+            key: 'stakeholders',
+            contextString: `This is a list of all stakeholders in the company ${JSON.stringify(data.stakeholders)}`,
+            rawValue: data.stakeholders,
+          },
+          {
+            key: 'totalOwnershipShares',
+            contextString: `${data.totalOwnershipShares} is the total no. of shares with the stakeholders which grant ownership in the company`,
+            rawValue: data.totalOwnershipShares,
+          },
+          {
+            key: 'totalOwnedShares',
+            contextString: `${data.totalOwnedShares} is the total no. of shares with stakeholders`,
+            rawValue: data.totalOwnedShares,
+          },
+          {
+            key: 'totalInvestment',
+            contextString: `${data.totalInvestment} is the total amount invested by the stakeholders in the company`,
+            rawValue: data.totalInvestment,
+          },
+        ])
+      );
+
       return data as {
         totalOwnershipShares: number;
         totalOwnedShares: number;
+        totalInvestment: number;
         stakeholders: (Stakeholders & {
           name: string;
           totalInvestment: number;
@@ -98,6 +138,7 @@ export default function StakeholdersPpage() {
   const stakeholders = stakeholdersQuery.data.stakeholders ?? [];
   const totalOwnershipShares = stakeholdersQuery.data.totalOwnershipShares ?? 0;
   const totalOwnedShares = stakeholdersQuery.data.totalOwnedShares ?? 0;
+  const totalInvestment = stakeholdersQuery.data.totalInvestment ?? 0;
   const users = usersQuery.data ?? [];
 
   return (
@@ -111,6 +152,47 @@ export default function StakeholdersPpage() {
         >
           <UserPlus className="mr-2 w-4 h-4" /> Add Stakeholder
         </Button>
+      </div>
+
+      <div className="gap-6 grid grid-cols-1 md:grid-cols-3 mb-6">
+        <Card className="bg-pastel-green">
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center font-medium text-sm">
+              <DollarSign className="mr-2 w-4 h-4" />
+              Current Valuation
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="font-bold text-2xl">{formatCurrency(Number(businessInfo?.postMoneyValuation ?? 0))}</div>
+            <p className="mt-1 text-muted-foreground text-xs">Company's estimated worth</p>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-pastel-purple">
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center font-medium text-sm">
+              <Coins className="mr-2 w-4 h-4" />
+              Total Shares
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="font-bold text-2xl">{formatNumber(totalOwnedShares)}</div>
+            <p className="mt-1 text-muted-foreground text-xs">Issued business shares</p>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-pastel-rose">
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center font-medium text-sm">
+              <DollarSign className="mr-2 w-4 h-4" />
+              Total Investment
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="font-bold text-2xl">{formatCurrency(totalInvestment)}</div>
+            <p className="mt-1 text-muted-foreground text-xs">Capital raised from investors</p>
+          </CardContent>
+        </Card>
       </div>
 
       <Card className="shadow-sm">

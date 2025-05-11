@@ -1,10 +1,12 @@
 import { configureStore } from '@reduxjs/toolkit';
 import baseAppReducer from './slices/baseApp';
+import aiContextReducer from './slices/aiContext';
 
 export const makeStore = () => {
   return configureStore({
     reducer: {
       baseApp: baseAppReducer,
+      aiContext: aiContextReducer,
     },
   });
 };
