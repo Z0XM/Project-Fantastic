@@ -8,6 +8,7 @@ import {
   CommandItem,
   CommandList,
 } from '@/components/ui/command';
+import { useAppSelector } from '@/hooks/store';
 import { useEffect, useState } from 'react';
 
 /**
@@ -40,6 +41,10 @@ export function CommandMenu() {
     document.addEventListener('keydown', down);
     return () => document.removeEventListener('keydown', down);
   }, []);
+
+  const aiContext = useAppSelector((state) => state.aiContext.value);
+
+  const aicontextStrings = Object.values(aiContext).map((context) => context.contextString);
 
   return (
     <CommandDialog open={open} onOpenChange={setOpen}>
