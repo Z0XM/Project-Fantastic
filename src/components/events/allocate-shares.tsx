@@ -1,6 +1,6 @@
 'use client';
 
-import { Dispatch, SetStateAction, useState } from 'react';
+import { Dispatch, SetStateAction, useEffect, useState } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -71,19 +71,24 @@ export default function AllocateShares({
       queryClient.invalidateQueries({ queryKey: ['businessInfo', businessId] });
       queryClient.invalidateQueries({ queryKey: ['stakeholders', businessId] });
       queryClient.invalidateQueries({ queryKey: ['events', businessId] });
-      queryClient.invalidateQueries({ queryKey: ['contracts', businessId] });
     },
     onError: (error) => {
       toast.error(`Error allocating shares!`);
     },
   });
 
+  const businessInfo = businessInfoQuery.data;
+
+  useEffect(() => {
+    if (businessInfo) {
+      form.setValue('valuation', Number(businessInfo.postMoneyValuation ?? 0));
+    }
+  }, [businessInfo]);
+
   const onSubmit = (values: z.infer<typeof formSchema>) => {
     allocateMutation.mutate(values);
     setIsDialogOpen(false);
   };
-
-  const businessInfo = businessInfoQuery.data;
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -241,7 +246,7 @@ export default function AllocateShares({
                           <div className="mb-1 font-medium text-foreground text-sm">Price Per Share</div>
                           <div className="text-md">
                             {formatNumber(
-                              Number(businessInfo?.postMoneyValuation ?? 0) /
+                              Number(form.watch('valuation') ?? 0) /
                                 (Number(businessInfo?.totalShares ?? 0) + Number(form.watch('addedShares') ?? 0))
                             )}
                           </div>
@@ -251,7 +256,7 @@ export default function AllocateShares({
                       <>
                         <FormField
                           control={form.control}
-                          name="type"
+                          name="stockSplitRatio"
                           render={({ field }) => (
                             <FormItem>
                               <FormLabel>Split Ratio</FormLabel>

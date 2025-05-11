@@ -1,10 +1,22 @@
 import { prisma } from '@/lib/prisma';
+import { ContractType, EventType, ShareType } from '@prisma/client';
 
 export async function GET(request: Request, { params }: { params: Promise<{ businessId: string }> }) {
   const { businessId } = await params;
+
+  const businessInfo = await prisma.businessEvents.findFirst({
+    where: { businessId: businessId },
+    orderBy: { createdAt: 'desc' },
+  });
+
   const stakeholders = await prisma.stakeholders.findMany({
     where: { businessId: businessId },
-    include: { user: true, investments: true, stakeholderEvents: true, warrantandOptionShares: true },
+    include: {
+      user: true,
+      investments: { include: { contracts: true } },
+      stakeholderEvents: true,
+      warrantandOptionShares: { include: { contracts: true } },
+    },
   });
 
   const formattedStakeholders = stakeholders.map((stakeholder) => ({
@@ -14,11 +26,50 @@ export async function GET(request: Request, { params }: { params: Promise<{ busi
     type: stakeholder.type,
     config: stakeholder.config,
     createdAt: stakeholder.createdAt,
-    totalInvestment: stakeholder.investments.reduce((acc, investment) => acc + Number(investment.amount), 0),
-    totalShares: stakeholder.stakeholderEvents.reduce((acc, event) => acc + Number(event.shares), 0),
-    warrantNOptions: stakeholder.warrantandOptionShares.reduce((acc, event) => acc + Number(event.shares), 0),
+    totalInvestment:
+      stakeholder.investments.reduce((acc, investment) => acc + Number(investment.amount), 0) +
+      stakeholder.investments.reduce(
+        (acc, investment) =>
+          acc + investment.contracts.reduce((accy, c) => accy + Number(c.contractInvestment ?? 0), 0),
+        0
+      ),
+    ownedShares: stakeholder.stakeholderEvents.reduce((acc, event) => acc + Number(event.shares), 0),
+    ownershipShares: stakeholder.stakeholderEvents
+      .filter((c) => c.eventType !== EventType.OPTION)
+      .reduce((acc, event) => acc + Number(event.shares), 0),
+    promisedShares:
+      stakeholder.warrantandOptionShares.reduce(
+        (acc, event) => acc + event.contracts.reduce((accy, c) => accy + Number(c.shares ?? 0), 0),
+        0
+      ) +
+      stakeholder.investments.reduce(
+        (acc, investment) =>
+          acc +
+          investment.contracts
+            .filter((c) => c.contractType === ContractType.CONVERTIBLE_NOTE || c.contractType === ContractType.SAFE)
+            .reduce((accy, c) => accy + Number(c.shares ?? 0), 0),
+        0
+      ),
   }));
-  return Response.json(formattedStakeholders);
+
+  const totalOwnershipShares = formattedStakeholders.reduce(
+    (acc, stakeholder) => acc + Number(stakeholder.ownershipShares),
+    0
+  );
+
+  const totalOwnedShares = formattedStakeholders.reduce((acc, stakeholder) => acc + Number(stakeholder.ownedShares), 0);
+
+  const result = {
+    stakeholders: formattedStakeholders.map((x) => ({
+      ...x,
+      stockValue:
+        x.ownedShares * (Number(businessInfo?.postMoneyValuation ?? 0) / Number(businessInfo?.totalShares ?? 0)),
+    })),
+    totalOwnershipShares,
+    totalOwnedShares,
+  };
+
+  return Response.json(result);
 }
 
 export async function POST(request: Request, { params }: { params: Promise<{ businessId: string }> }) {

@@ -32,13 +32,10 @@ enum RoundType {
     BRIDGE
     IPO
     CROWDFUNDING
-    CONVERTIBLE_NOTE
-    SAFE
     VENTURE_DEBT
-    WARRANT
-    OPTION
     NEW_SHARES
     STOCK_SPLIT
+    CONTRACT_ISSUE
 }
 
 // Represents funding rounds with their type and associated events
@@ -118,7 +115,6 @@ enum ShareType {
     COMMON
     PREFERRED
     RESTRICTED
-    WARRANT
     OPTION
 }
 
@@ -136,6 +132,14 @@ enum EventType {
     CONVERTIBLE_NOTE
     SAFE
     DILUTION
+}
+
+enum ContractType {
+    NONE
+    OPTION
+    WARRANT
+    CONVERTIBLE_NOTE
+    SAFE
 }
 
 // Records share allocation events for stakeholders in specific rounds
@@ -160,24 +164,15 @@ model StakeholderEvents {
 model WarrantAndOptionShares {
     id            String    @id @default(uuid())
     createdAt     DateTime  @default(now())
-    shares        Int
-    shareType     ShareType
-    pricePerShare Decimal
     stakeholderId String
     businessId    String
     config        Json?
-    roundId       String
+    notes         String?   @db.Text
+    eventType     EventType
 
     stakeholder Stakeholders @relation(fields: [stakeholderId], references: [id])
     business    Business     @relation(fields: [businessId], references: [id])
-
-    @@unique([roundId, stakeholderId])
-}
-
-enum ContractDataType {
-    NONE
-    URL
-    JSON
+    contracts   Contracts[]
 }
 
 // Tracks monetary investments made by stakeholders in specific rounds
@@ -198,18 +193,22 @@ model Investments {
 
 // Stores legal documents and contracts associated with investments
 model Contracts {
-    id           String           @id @default(uuid())
-    createdAt    DateTime         @default(now())
-    dataType     ContractDataType
-    status       GlobalStates
-    shares       Int?
-    contractUrl  String?          @db.Text
-    contractJson Json?
-    investmentId String
-    title        String
-    description  String?          @db.Text
+    id                 String       @id @default(uuid())
+    createdAt          DateTime     @default(now())
+    status             GlobalStates
+    shares             Int?
+    contractInvestment Decimal?
+    contractUrl        String?      @db.Text
+    pricePerShare      Decimal?
+    shareType          ShareType?
+    investmentId       String?
+    title              String
+    description        String?      @db.Text
+    warrantOptionsId   String?
+    contractType       ContractType @default(NONE)
 
-    investment        Investments         @relation(fields: [investmentId], references: [id])
+    warrantOptions    WarrantAndOptionShares? @relation(fields: [warrantOptionsId], references: [id])
+    investment        Investments?            @relation(fields: [investmentId], references: [id])
     stakeHolderEvents StakeholderEvents[]
 }
 

@@ -23,34 +23,32 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Controller, useForm } from 'react-hook-form';
 import { z } from 'zod';
-import { BusinessEvents, RoundType, Stakeholders } from '@prisma/client';
+import { BusinessEvents, EventType, Stakeholders } from '@prisma/client';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from '../ui/sheet';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useParams } from 'next/navigation';
 
 const formSchema = z.object({
-  round: z.object({
-    name: z.string().min(1, { message: 'Round name is required' }),
-    type: z.literal(RoundType.WARRANT).or(z.literal(RoundType.OPTION)),
+  event: z.object({
+    type: z.literal(EventType.WARRANT).or(z.literal(EventType.OPTION)),
+    notes: z.string().optional(),
     date: z.string().refine((val) => !isNaN(Date.parse(val)), { message: 'Invalid date' }),
   }),
-  investments: z.array(
+  grants: z.array(
     z.object({
-      stakeholder: z.object({
-        name: z.string().min(1, { message: 'Investor name is required' }),
-      }),
+      stakeholderId: z.string().min(1, { message: 'Investor  is required' }),
+      notes: z.string().optional(),
       contracts: z
         .array(
           z.object({
             title: z.string(),
             description: z.string().optional(),
+            shares: z.coerce.number().min(0).optional(),
+            pricePerShare: z.coerce.number().min(0).optional(),
           })
         )
         .min(1, { message: 'At least one contract is required' }),
-      pricePerShare: z.coerce.number().min(0, { message: 'Per share price is required' }),
-      shares: z.coerce.number().min(1, { message: 'No. of shares is required' }),
-      notes: z.string().optional(),
     })
   ),
 });
@@ -84,18 +82,16 @@ export default function WarrantNOptions({
     // },
     resolver: zodResolver(formSchema),
     defaultValues: {
-      round: {
-        name: '',
-        type: RoundType.WARRANT,
+      event: {
+        type: EventType.WARRANT,
         date: formatDate(new Date()),
+        notes: '',
       },
-      investments: [
+      grants: [
         {
-          stakeholder: { name: '' },
-          contracts: [],
-          shares: 0,
+          stakeholderId: '',
           notes: '',
-          pricePerShare: 0,
+          contracts: [],
         },
       ],
     },
@@ -114,7 +110,7 @@ export default function WarrantNOptions({
       });
     },
     onSuccess: () => {
-      toast.success('Round Raised successfully!');
+      toast.success('Grant Raised successfully!');
       queryClient.invalidateQueries({ queryKey: ['businessInfo', businessId] });
       queryClient.invalidateQueries({ queryKey: ['stakeholders', businessId] });
       queryClient.invalidateQueries({ queryKey: ['events', businessId] });
@@ -148,7 +144,7 @@ export default function WarrantNOptions({
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} onReset={() => setIsDialogOpen(false)}>
             <DialogHeader>
-              <DialogTitle className="text-foreground text-2xl">Raise a Round</DialogTitle>
+              <DialogTitle className="text-foreground text-2xl">Grant Warrant or Options</DialogTitle>
               <DialogDescription>
                 Enter the details of your new funding round. This will update your cap table with the new investor
                 allocations.
@@ -158,28 +154,39 @@ export default function WarrantNOptions({
             <div className="gap-8 grid my-4">
               <Card className="shadow-md border-none overflow-hidden">
                 <CardHeader className="z-10 relative">
-                  <CardTitle>Round Details</CardTitle>
-                  <CardDescription>Enter the details of this investment round</CardDescription>
+                  <CardTitle>Event Details</CardTitle>
+                  <CardDescription>Enter the details of this event</CardDescription>
                 </CardHeader>
                 <CardContent className="z-10 relative">
                   <div className="gap-6 grid grid-cols-1 md:grid-cols-2">
                     <FormField
                       control={form.control}
-                      name="round.name"
+                      name="event.type"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Round Name</FormLabel>
+                          <FormLabel>Event Type</FormLabel>
                           <FormControl>
-                            <Input placeholder="Series A" {...field} />
+                            <Select onValueChange={field.onChange} {...field}>
+                              <SelectTrigger className="w-[180px]">
+                                <SelectValue placeholder="..." {...field} />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {[EventType.WARRANT, EventType.OPTION].sort().map((key) => (
+                                  <SelectItem key={key} value={EventType[key as keyof typeof EventType]}>
+                                    {formatEnum(key)}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
                           </FormControl>
-                          <FormDescription>This is the name of the round.</FormDescription>
+                          <FormDescription>Issue Warrants or Options</FormDescription>
                           <FormMessage />
                         </FormItem>
                       )}
                     />
                     <Controller
                       control={form.control}
-                      name="round.date"
+                      name="event.date"
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>Round Date</FormLabel>
@@ -205,31 +212,6 @@ export default function WarrantNOptions({
                         </FormItem>
                       )}
                     />
-                    <FormField
-                      control={form.control}
-                      name="round.type"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Round Type</FormLabel>
-                          <FormControl>
-                            <Select onValueChange={field.onChange} {...field}>
-                              <SelectTrigger className="w-[180px]">
-                                <SelectValue placeholder="..." {...field} />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {[RoundType.WARRANT, RoundType.OPTION].sort().map((key) => (
-                                  <SelectItem key={key} value={RoundType[key as keyof typeof RoundType]}>
-                                    {formatEnum(key)}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </FormControl>
-                          <FormDescription>Issue Warrants or Options</FormDescription>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
 
                     <div>
                       <div className="mb-1 font-medium text-foreground text-sm">Current Valuation</div>
@@ -249,35 +231,33 @@ export default function WarrantNOptions({
               <Card className="shadow-md border-none overflow-hidden">
                 <CardHeader className="z-10 relative flex flex-row justify-between items-center">
                   <div>
-                    <CardTitle>Investors</CardTitle>
-                    <CardDescription>Add all investors participating in this round</CardDescription>
+                    <CardTitle>Grants</CardTitle>
+                    <CardDescription>Add grants with their contracts</CardDescription>
                   </div>
                   <Button
                     type="button"
                     onClick={() => {
-                      form.setValue('investments', [
-                        ...form.getValues('investments'),
+                      form.setValue('grants', [
+                        ...form.getValues('grants'),
                         {
-                          stakeholder: { name: '' },
-                          contracts: [],
-                          shares: 0,
+                          stakeholderId: '',
                           notes: '',
-                          pricePerShare: 0,
+                          contracts: [],
                         },
                       ]);
                     }}
                     className="bg-pastel-lavender hover:bg-pastel-peach/90 text-foreground"
                   >
-                    <Plus className="mr-1 w-4 h-4" /> Add Investment
+                    <Plus className="mr-1 w-4 h-4" /> Add Grant
                   </Button>
                 </CardHeader>
                 <CardContent className="z-10 relative">
                   <div className="gap-8 grid">
-                    {form.watch('investments').map((investment, index) => (
-                      <div key={`form-investement-${index}`} className="space-y-4 bg-muted p-4 rounded-lg">
+                    {form.watch('grants').map((_, index) => (
+                      <div key={`form-grant-${index}`} className="space-y-4 bg-muted p-4 rounded-lg">
                         <div className="flex justify-between items-center mb-4">
-                          <h3 className="font-medium text-lg">Investor {index + 1}</h3>
-                          {form.watch('investments').length > 1 && (
+                          <h3 className="font-medium text-lg">Grant {index + 1}</h3>
+                          {form.watch('grants').length > 1 && (
                             <Button
                               variant="outline"
                               size="icon"
@@ -285,8 +265,8 @@ export default function WarrantNOptions({
                               onClick={(e) => {
                                 e.preventDefault();
                                 form.setValue(
-                                  'investments',
-                                  form.getValues('investments').filter((_, i) => i !== index)
+                                  'grants',
+                                  form.getValues('grants').filter((_, i) => i !== index)
                                 );
                               }}
                               className="hover:bg-destructive/10 w-8 h-8 text-destructive"
@@ -299,7 +279,7 @@ export default function WarrantNOptions({
                         <div className="gap-4 grid grid-cols-2">
                           <FormField
                             control={form.control}
-                            name={`investments.${index}.stakeholder.name`}
+                            name={`grants.${index}.stakeholderId`}
                             render={({ field }) => (
                               <FormItem>
                                 <FormLabel>Name</FormLabel>
@@ -315,18 +295,17 @@ export default function WarrantNOptions({
                                     <SelectContent>
                                       {stakeholders
                                         .filter(
-                                          (user) =>
+                                          (sh) =>
                                             !form
-                                              .watch('investments')
+                                              .watch('grants')
                                               .filter((_, yIndex) => index !== yIndex)
-                                              .map((inv) => inv.stakeholder.name)
-                                              .includes(user.name)
+                                              .map((inv) => inv.stakeholderId)
+                                              .includes(sh.id)
                                         )
-                                        .map((user) => user.name)
-                                        .sort()
-                                        .map((type) => (
-                                          <SelectItem key={type} value={type}>
-                                            {formatEnum(type)}
+                                        .sort((a, b) => a.name.localeCompare(b.name))
+                                        .map((sh) => (
+                                          <SelectItem key={sh.id} value={sh.id}>
+                                            {formatEnum(sh.name)}
                                           </SelectItem>
                                         ))}
                                     </SelectContent>
@@ -337,37 +316,10 @@ export default function WarrantNOptions({
                               </FormItem>
                             )}
                           />
+
                           <FormField
                             control={form.control}
-                            name={`investments.${index}.pricePerShare`}
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Per Share Price</FormLabel>
-                                <FormControl>
-                                  <Input type="number" {...field} />
-                                </FormControl>
-                                <FormDescription>Price at which shares must be issued.</FormDescription>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                          <FormField
-                            control={form.control}
-                            name={`investments.${index}.shares`}
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Shares Promised</FormLabel>
-                                <FormControl>
-                                  <Input type="number" {...field} />
-                                </FormControl>
-                                <FormDescription>No. of shares promised in contract.</FormDescription>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                          <FormField
-                            control={form.control}
-                            name={`investments.${index}.notes`}
+                            name={`grants.${index}.notes`}
                             render={({ field }) => (
                               <FormItem>
                                 <FormLabel>Notes</FormLabel>
@@ -391,12 +343,13 @@ export default function WarrantNOptions({
                                   size="sm"
                                   type="button"
                                   onClick={(e) => {
-                                    // e.preventDefault();
                                     form.setValue(
-                                      `investments.${index}.contracts`,
-                                      form.getValues(`investments.${index}.contracts`).concat({
+                                      `grants.${index}.contracts`,
+                                      form.getValues(`grants.${index}.contracts`).concat({
                                         title: '',
                                         description: '',
+                                        shares: 0,
+                                        pricePerShare: 0,
                                       })
                                     );
                                   }}
@@ -412,8 +365,8 @@ export default function WarrantNOptions({
                                 <div className="space-y-4 mx-4 mt-6">
                                   <FormField
                                     control={form.control}
-                                    name={`investments.${index}.contracts.${
-                                      form.watch(`investments.${index}.contracts`).length - 1
+                                    name={`grants.${index}.contracts.${
+                                      form.watch(`grants.${index}.contracts`).length - 1
                                     }.title`}
                                     render={({ field }) => (
                                       <FormItem>
@@ -428,8 +381,8 @@ export default function WarrantNOptions({
                                   />
                                   <FormField
                                     control={form.control}
-                                    name={`investments.${index}.contracts.${
-                                      form.watch(`investments.${index}.contracts`).length - 1
+                                    name={`grants.${index}.contracts.${
+                                      form.watch(`grants.${index}.contracts`).length - 1
                                     }.description`}
                                     render={({ field }) => (
                                       <FormItem>
@@ -438,6 +391,38 @@ export default function WarrantNOptions({
                                           <Textarea {...field} />
                                         </FormControl>
                                         <FormDescription>Details of the contract.</FormDescription>
+                                        <FormMessage />
+                                      </FormItem>
+                                    )}
+                                  />
+                                  <FormField
+                                    control={form.control}
+                                    name={`grants.${index}.contracts.${
+                                      form.watch(`grants.${index}.contracts`).length - 1
+                                    }.shares`}
+                                    render={({ field }) => (
+                                      <FormItem>
+                                        <FormLabel>Shares Associated</FormLabel>
+                                        <FormControl>
+                                          <Input type="number" {...field} />
+                                        </FormControl>
+                                        <FormDescription>Shares issued with the contract.</FormDescription>
+                                        <FormMessage />
+                                      </FormItem>
+                                    )}
+                                  />
+                                  <FormField
+                                    control={form.control}
+                                    name={`grants.${index}.contracts.${
+                                      form.watch(`grants.${index}.contracts`).length - 1
+                                    }.pricePerShare`}
+                                    render={({ field }) => (
+                                      <FormItem>
+                                        <FormLabel>Price Per Share</FormLabel>
+                                        <FormControl>
+                                          <Input type="number" {...field} />
+                                        </FormControl>
+                                        <FormDescription>Price of each share as per the contract.</FormDescription>
                                         <FormMessage />
                                       </FormItem>
                                     )}
@@ -459,13 +444,13 @@ export default function WarrantNOptions({
                             </Sheet>
                           </div>
                           <div className="py-2">
-                            <FormField name={`investments.${index}.contracts`} render={() => <FormMessage />} />
+                            <FormField name={`grants.${index}.contracts`} render={() => <FormMessage />} />
                           </div>
-                          {form.watch(`investments.${index}.contracts`).length > 0 ? (
+                          {form.watch(`grants.${index}.contracts`).length > 0 ? (
                             <Card>
                               <CardContent className="px-3">
                                 <div className="">
-                                  {form.watch(`investments.${index}.contracts`).map((contract, cIndex) => (
+                                  {form.watch(`grants.${index}.contracts`).map((contract, cIndex) => (
                                     <div
                                       key={`contract-${index}-${cIndex}`}
                                       className="flex justify-between items-center bg-background p-2 rounded"
@@ -477,6 +462,11 @@ export default function WarrantNOptions({
                                         ) : (
                                           <span>Contract {cIndex + 1}</span>
                                         )}
+
+                                        <span className="ml-2 text-muted-foreground text-sm">
+                                          {formatNumber(contract.shares ?? 0)} shares{' '}
+                                          {'@ ' + formatCurrency(contract.pricePerShare ?? 0)}
+                                        </span>
                                       </div>
                                       <Button
                                         variant="ghost"
@@ -484,10 +474,8 @@ export default function WarrantNOptions({
                                         onClick={(e) => {
                                           e.preventDefault();
                                           form.setValue(
-                                            `investments.${index}.contracts`,
-                                            form
-                                              .getValues(`investments.${index}.contracts`)
-                                              .filter((_, i) => i !== cIndex)
+                                            `grants.${index}.contracts`,
+                                            form.getValues(`grants.${index}.contracts`).filter((_, i) => i !== cIndex)
                                           );
                                         }}
                                         className="w-6 h-6 text-muted-foreground hover:text-destructive"

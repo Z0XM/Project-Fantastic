@@ -23,7 +23,7 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Controller, useForm } from 'react-hook-form';
 import { z } from 'zod';
-import { BusinessEvents, Contracts, RoundType, Stakeholders } from '@prisma/client';
+import { BusinessEvents, Contracts, ContractType, RoundType, ShareType, Stakeholders } from '@prisma/client';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from '../ui/sheet';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -38,7 +38,7 @@ const formSchema = z.object({
   }),
   dilutions: z.array(
     z.object({
-      name: z.string().min(1, { message: 'Dilution stakeholder name is required' }),
+      stakeholderId: z.string().min(1, { message: 'Dilution stakeholder name is required' }),
       shares: z.coerce.number().min(0, { message: 'Dilution stakeholder shares are required' }),
     })
   ),
@@ -108,7 +108,7 @@ export default function IssueContracts({
       });
     },
     onSuccess: () => {
-      toast.success('Round Raised successfully!');
+      toast.success('Contract Issued successfully!');
       queryClient.invalidateQueries({ queryKey: ['businessInfo', businessId] });
       queryClient.invalidateQueries({ queryKey: ['stakeholders', businessId] });
       queryClient.invalidateQueries({ queryKey: ['events', businessId] });
@@ -243,13 +243,10 @@ export default function IssueContracts({
 
                     <div className="flex justify-evenly">
                       <div>
-                        <div className="mb-1 font-medium text-foreground text-sm">Round Type</div>
+                        <div className="mb-1 font-medium text-foreground text-sm">Event Type</div>
                         <div className="text-md">
                           <div className={` text-md`}>
-                            {formatEnum(
-                              (contractMap[form.watch('round.contractId')]?.contractJson as any)?.shareType ??
-                                'SERIES_N'
-                            )}
+                            {formatEnum(contractMap[form.watch('round.contractId')]?.contractType ?? ContractType.NONE)}
                           </div>
                         </div>
                       </div>
@@ -258,8 +255,9 @@ export default function IssueContracts({
                         <div className="text-md">
                           <div className={` text-md`}>
                             {formatCurrency(
-                              (contractMap[form.watch('round.contractId')]?.contractJson as any)?.pricePerShare ??
-                                Number(businessInfo?.postMoneyValuation ?? 0) / Number(businessInfo?.totalShares ?? 0)
+                              contractMap[form.watch('round.contractId')]?.warrantOptionsId
+                                ? Number(contractMap[form.watch('round.contractId')]?.pricePerShare ?? 0)
+                                : Number(businessInfo?.postMoneyValuation ?? 0) / Number(businessInfo?.totalShares ?? 0)
                             )}
                           </div>
                         </div>
@@ -271,16 +269,13 @@ export default function IssueContracts({
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>
-                            Shares Issued (Max:{' '}
-                            {(contractMap[form.watch('round.contractId')]?.contractJson as any)?.promisedShares ?? 0})
+                            Shares Issued (Max: {contractMap[form.watch('round.contractId')]?.shares ?? 0})
                           </FormLabel>
                           <FormControl>
                             <Input
                               type="number"
                               {...field}
-                              max={
-                                (contractMap[form.watch('round.contractId')]?.contractJson as any)?.promisedShares ?? 0
-                              }
+                              max={contractMap[form.watch('round.contractId')]?.shares ?? 0}
                             />
                           </FormControl>
                           <FormDescription>No. of shares issued in return.</FormDescription>
@@ -320,7 +315,7 @@ export default function IssueContracts({
                       form.setValue('dilutions', [
                         ...form.getValues('dilutions'),
                         {
-                          name: '',
+                          stakeholderId: '',
                           shares: 0,
                         },
                       ]);
@@ -352,11 +347,10 @@ export default function IssueContracts({
                             <Trash2 className="w-4 h-4" />
                           </Button>
                         </div>
-
                         <div className="gap-4 grid grid-cols-2">
                           <FormField
                             control={form.control}
-                            name={`dilutions.${index}.name`}
+                            name={`dilutions.${index}.stakeholderId`}
                             render={({ field }) => (
                               <FormItem>
                                 <FormLabel>Name</FormLabel>
@@ -374,19 +368,18 @@ export default function IssueContracts({
                                     <SelectContent>
                                       {stakeholders
                                         .filter(
-                                          (user) =>
+                                          (sh) =>
                                             !form
                                               .watch('dilutions')
                                               .filter((_, yIndex) => index !== yIndex)
-                                              .map((dil) => dil.name)
-                                              .includes(user.name)
+                                              .map((dil) => dil.stakeholderId)
+                                              .includes(sh.id)
                                         )
-                                        .filter((user) => user.hasStakes)
-                                        .map((user) => user.name)
-                                        .sort()
-                                        .map((type) => (
-                                          <SelectItem key={type} value={type}>
-                                            {formatEnum(type)}
+                                        .filter((sh) => sh.hasStakes)
+                                        .sort((a, b) => a.name.localeCompare(b.name))
+                                        .map((sh) => (
+                                          <SelectItem key={sh.id} value={sh.id}>
+                                            {formatEnum(sh.name)}
                                           </SelectItem>
                                         ))}
                                     </SelectContent>

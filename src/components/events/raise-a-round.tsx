@@ -23,7 +23,7 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Controller, useForm } from 'react-hook-form';
 import { z } from 'zod';
-import { BusinessEvents, RoundType, Stakeholders } from '@prisma/client';
+import { BusinessEvents, ContractType, RoundType, Stakeholders } from '@prisma/client';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from '../ui/sheet';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -38,24 +38,25 @@ const formSchema = z.object({
   }),
   investments: z.array(
     z.object({
-      stakeholder: z.object({
-        name: z.string().min(1, { message: 'Investor name is required' }),
-      }),
+      stakeholderId: z.string().min(1, { message: 'Investor  is required' }),
       contracts: z.array(
         z.object({
           title: z.string(),
           description: z.string().optional(),
           shares: z.coerce.number().min(0).optional(),
+          pricePerShare: z.coerce.number().min(0).optional(),
+          contractType: z.nativeEnum(ContractType).optional(),
+          investedAmount: z.coerce.number().min(0).optional(),
         })
       ),
-      amount: z.coerce.number().min(0, { message: 'Amount is required' }),
+      amount: z.coerce.number().min(0).optional(),
       shares: z.coerce.number().min(0, { message: 'No. of shares is required' }),
       notes: z.string().optional(),
     })
   ),
   dilutions: z.array(
     z.object({
-      name: z.string().min(1, { message: 'Dilution stakeholder name is required' }),
+      stakeholderId: z.string().min(1, { message: 'Dilution stakeholder is required' }),
       shares: z.coerce.number().min(0, { message: 'Dilution stakeholder shares are required' }),
     })
   ),
@@ -100,7 +101,7 @@ export default function EventRaiseARound({
       },
       investments: [
         {
-          stakeholder: { name: '' },
+          stakeholderId: '',
           contracts: [],
           amount: 0,
           shares: 0,
@@ -145,7 +146,14 @@ export default function EventRaiseARound({
     const balanceShares =
       Number(businessInfo?.balanceShares ?? 0) -
       (values.investments.reduce((acc, x) => acc + Number(x.shares), 0) +
-        values.investments.reduce((acc, x) => acc + x.contracts.reduce((accy, y) => accy + Number(y.shares), 0), 0)) +
+        values.investments.reduce(
+          (acc, x) =>
+            acc +
+            x.contracts
+              .filter((x) => !x.contractType || x.contractType === ContractType.NONE)
+              .reduce((accy, y) => accy + Number(y.shares), 0),
+          0
+        )) +
       values.dilutions.reduce((acc, x) => acc + Number(x.shares), 0);
 
     if (balanceShares < 0) {
@@ -254,8 +262,6 @@ export default function EventRaiseARound({
                                   RoundType.BRIDGE,
                                   RoundType.IPO,
                                   RoundType.CROWDFUNDING,
-                                  RoundType.CONVERTIBLE_NOTE,
-                                  RoundType.SAFE,
                                   RoundType.VENTURE_DEBT,
                                 ]
                                   .sort()
@@ -289,14 +295,38 @@ export default function EventRaiseARound({
                     <RoundMetrics
                       oldValuation={Number(businessInfo?.postMoneyValuation ?? 0)}
                       preMoneyValuation={Number(form.watch('round.preMoneyValuation') ?? 0)}
-                      investment={form.watch('investments').reduce((acc, x) => acc + Number(x.amount), 0)}
+                      investment={
+                        form.watch('investments').reduce((acc, x) => acc + Number(x.amount), 0) +
+                        form
+                          .watch('investments')
+                          .reduce(
+                            (acc, x) =>
+                              acc +
+                              x.contracts.reduce(
+                                (accy, y) =>
+                                  accy +
+                                  (!y.contractType || y.contractType == ContractType.NONE
+                                    ? Number(y.shares ?? 0) * Number(y.pricePerShare ?? 0)
+                                    : Number(y.investedAmount ?? 0)),
+                                0
+                              ),
+                            0
+                          )
+                      }
                       totalShares={Number(businessInfo?.totalShares ?? 0)}
                       balanceShares={
                         Number(businessInfo?.balanceShares ?? 0) -
                         (form.watch('investments').reduce((acc, x) => acc + Number(x.shares), 0) +
                           form
                             .watch('investments')
-                            .reduce((acc, x) => acc + x.contracts.reduce((accy, y) => accy + Number(y.shares), 0), 0)) +
+                            .reduce(
+                              (acc, x) =>
+                                acc +
+                                x.contracts
+                                  .filter((c) => !c.contractType || c.contractType === ContractType.NONE)
+                                  .reduce((accy, y) => accy + Number(y.shares ?? 0), 0),
+                              0
+                            )) +
                         form.watch('dilutions').reduce((acc, x) => acc + Number(x.shares), 0)
                       }
                     />
@@ -315,7 +345,7 @@ export default function EventRaiseARound({
                       form.setValue('investments', [
                         ...form.getValues('investments'),
                         {
-                          stakeholder: { name: '' },
+                          stakeholderId: '',
                           contracts: [],
                           amount: 0,
                           shares: 0,
@@ -356,7 +386,7 @@ export default function EventRaiseARound({
                         <div className="gap-4 grid grid-cols-2">
                           <FormField
                             control={form.control}
-                            name={`investments.${index}.stakeholder.name`}
+                            name={`investments.${index}.stakeholderId`}
                             render={({ field }) => (
                               <FormItem>
                                 <FormLabel>Name</FormLabel>
@@ -372,18 +402,17 @@ export default function EventRaiseARound({
                                     <SelectContent>
                                       {stakeholders
                                         .filter(
-                                          (user) =>
+                                          (sh) =>
                                             !form
                                               .watch('investments')
                                               .filter((_, yIndex) => index !== yIndex)
-                                              .map((inv) => inv.stakeholder.name)
-                                              .includes(user.name)
+                                              .map((inv) => inv.stakeholderId)
+                                              .includes(sh.id)
                                         )
-                                        .map((user) => user.name)
-                                        .sort()
-                                        .map((type) => (
-                                          <SelectItem key={type} value={type}>
-                                            {formatEnum(type)}
+                                        .sort((a, b) => a.name.localeCompare(b.name))
+                                        .map((sh) => (
+                                          <SelectItem key={sh.id} value={sh.id}>
+                                            {formatEnum(sh.name)}
                                           </SelectItem>
                                         ))}
                                     </SelectContent>
@@ -395,18 +424,34 @@ export default function EventRaiseARound({
                             )}
                           />
                           <div className="flex justify-evenly">
-                            <div>
-                              <div className="mb-1 font-medium text-foreground text-sm">Invested Amount</div>
-                              <div className="text-md">
-                                <div className={`font-medium text-xl`}>
-                                  {formatCurrency(
-                                    (Number(form.watch(`investments.${index}.shares`)) *
-                                      Number(form.watch(`round.preMoneyValuation`))) /
-                                      Number(businessInfo?.totalShares ?? 0)
-                                  )}
+                            {form.watch('round.type') === RoundType.BOOTSTRAP ? (
+                              <FormField
+                                control={form.control}
+                                name={`investments.${index}.amount`}
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel>Invested Amount</FormLabel>
+                                    <FormControl>
+                                      <Input type="number" {...field} />
+                                    </FormControl>
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
+                            ) : (
+                              <div>
+                                <div className="mb-1 font-medium text-foreground text-sm">Invested Amount</div>
+                                <div className="text-md">
+                                  <div className={`font-medium text-xl`}>
+                                    {formatCurrency(
+                                      (Number(form.watch(`investments.${index}.shares`)) *
+                                        Number(form.watch(`round.preMoneyValuation`))) /
+                                        Number(businessInfo?.totalShares ?? 0)
+                                    )}
+                                  </div>
                                 </div>
                               </div>
-                            </div>
+                            )}
                             <div>
                               <div className="mb-1 font-medium text-foreground text-sm">Per Share Price</div>
                               <div className="text-md">
@@ -419,6 +464,7 @@ export default function EventRaiseARound({
                               </div>
                             </div>
                           </div>
+
                           <FormField
                             control={form.control}
                             name={`investments.${index}.shares`}
@@ -459,13 +505,15 @@ export default function EventRaiseARound({
                                   size="sm"
                                   type="button"
                                   onClick={(e) => {
-                                    // e.preventDefault();
                                     form.setValue(
                                       `investments.${index}.contracts`,
                                       form.getValues(`investments.${index}.contracts`).concat({
                                         title: '',
                                         description: '',
                                         shares: 0,
+                                        pricePerShare: 0,
+                                        contractType: ContractType.NONE,
+                                        investedAmount: 0,
                                       })
                                     );
                                   }}
@@ -491,6 +539,38 @@ export default function EventRaiseARound({
                                           <Input type="text" {...field} />
                                         </FormControl>
                                         <FormDescription>Title of the contract.</FormDescription>
+                                        <FormMessage />
+                                      </FormItem>
+                                    )}
+                                  />
+                                  <FormField
+                                    control={form.control}
+                                    name={`investments.${index}.contracts.${
+                                      form.watch(`investments.${index}.contracts`).length - 1
+                                    }.contractType`}
+                                    render={({ field }) => (
+                                      <FormItem>
+                                        <FormLabel>Round Type</FormLabel>
+                                        <FormControl>
+                                          <Select onValueChange={field.onChange} {...field}>
+                                            <SelectTrigger className="w-[180px]">
+                                              <SelectValue placeholder="..." {...field} />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                              {[ContractType.NONE, ContractType.CONVERTIBLE_NOTE, ContractType.SAFE]
+                                                .sort()
+                                                .map((key) => (
+                                                  <SelectItem
+                                                    key={key}
+                                                    value={ContractType[key as keyof typeof ContractType]}
+                                                  >
+                                                    {formatEnum(key)}
+                                                  </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                          </Select>
+                                        </FormControl>
+                                        <FormDescription>Type of Round</FormDescription>
                                         <FormMessage />
                                       </FormItem>
                                     )}
@@ -527,6 +607,28 @@ export default function EventRaiseARound({
                                       </FormItem>
                                     )}
                                   />
+                                  {form.watch(
+                                    `investments.${index}.contracts.${
+                                      form.watch(`investments.${index}.contracts`).length - 1
+                                    }.contractType`
+                                  ) === ContractType.NONE ? null : (
+                                    <FormField
+                                      control={form.control}
+                                      name={`investments.${index}.contracts.${
+                                        form.watch(`investments.${index}.contracts`).length - 1
+                                      }.investedAmount`}
+                                      render={({ field }) => (
+                                        <FormItem>
+                                          <FormLabel>Invested Amount</FormLabel>
+                                          <FormControl>
+                                            <Input type="number" {...field} />
+                                          </FormControl>
+                                          <FormDescription>Amount Invested as per contract.</FormDescription>
+                                          <FormMessage />
+                                        </FormItem>
+                                      )}
+                                    />
+                                  )}
 
                                   <div className="flex justify-end mt-4">
                                     <Button
@@ -562,11 +664,16 @@ export default function EventRaiseARound({
                                         ) : (
                                           <span>Contract {cIndex + 1}</span>
                                         )}
-                                        {contract.shares ? (
-                                          <span className="ml-2 text-muted-foreground text-sm">
-                                            {contract.shares} shares
-                                          </span>
-                                        ) : null}
+
+                                        <span className="ml-2 text-muted-foreground text-sm">
+                                          {formatNumber(contract.shares ?? 0)} shares{' '}
+                                          {form.watch(`investments.${index}.contracts.${cIndex}.contractType`) ===
+                                            ContractType.CONVERTIBLE_NOTE ||
+                                          form.watch(`investments.${index}.contracts.${cIndex}.contractType`) ===
+                                            ContractType.SAFE
+                                            ? '@ ' + formatCurrency(contract.investedAmount)
+                                            : null}
+                                        </span>
                                       </div>
                                       <Button
                                         variant="ghost"
@@ -612,7 +719,7 @@ export default function EventRaiseARound({
                       form.setValue('dilutions', [
                         ...form.getValues('dilutions'),
                         {
-                          name: '',
+                          stakeholderId: '',
                           shares: 0,
                         },
                       ]);
@@ -648,7 +755,7 @@ export default function EventRaiseARound({
                         <div className="gap-4 grid grid-cols-2">
                           <FormField
                             control={form.control}
-                            name={`dilutions.${index}.name`}
+                            name={`dilutions.${index}.stakeholderId`}
                             render={({ field }) => (
                               <FormItem>
                                 <FormLabel>Name</FormLabel>
@@ -666,19 +773,18 @@ export default function EventRaiseARound({
                                     <SelectContent>
                                       {stakeholders
                                         .filter(
-                                          (user) =>
+                                          (sh) =>
                                             !form
                                               .watch('dilutions')
                                               .filter((_, yIndex) => index !== yIndex)
-                                              .map((dil) => dil.name)
-                                              .includes(user.name)
+                                              .map((dil) => dil.stakeholderId)
+                                              .includes(sh.id)
                                         )
-                                        .filter((user) => user.hasStakes)
-                                        .map((user) => user.name)
-                                        .sort()
-                                        .map((type) => (
-                                          <SelectItem key={type} value={type}>
-                                            {formatEnum(type)}
+                                        .filter((sh) => sh.hasStakes)
+                                        .sort((a, b) => a.name.localeCompare(b.name))
+                                        .map((sh) => (
+                                          <SelectItem key={sh.id} value={sh.id}>
+                                            {formatEnum(sh.name)}
                                           </SelectItem>
                                         ))}
                                     </SelectContent>

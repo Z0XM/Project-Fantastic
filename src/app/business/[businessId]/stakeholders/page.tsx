@@ -29,12 +29,18 @@ export default function StakeholdersPpage() {
     queryFn: async () => {
       const response = await fetch(`/api/business/${businessId}/stakeholders`);
       const data = await response.json();
-      return data as (Stakeholders & {
-        name: string;
-        totalInvestment: number;
-        totalShares: number;
-        warrantNOptions: number;
-      })[];
+      return data as {
+        totalOwnershipShares: number;
+        totalOwnedShares: number;
+        stakeholders: (Stakeholders & {
+          name: string;
+          totalInvestment: number;
+          ownedShares: number;
+          ownershipShares: number;
+          promisedShares: number;
+          stockValue: number;
+        })[];
+      };
     },
   });
 
@@ -89,7 +95,9 @@ export default function StakeholdersPpage() {
     );
   }
 
-  const stakeholders = stakeholdersQuery.data;
+  const stakeholders = stakeholdersQuery.data.stakeholders ?? [];
+  const totalOwnershipShares = stakeholdersQuery.data.totalOwnershipShares ?? 0;
+  const totalOwnedShares = stakeholdersQuery.data.totalOwnedShares ?? 0;
   const users = usersQuery.data ?? [];
 
   return (
@@ -117,9 +125,12 @@ export default function StakeholdersPpage() {
                 <TableHead>Name</TableHead>
                 <TableHead>Type</TableHead>
                 <TableHead className="text-right">Total Investment</TableHead>
-                <TableHead className="text-right">Shares</TableHead>
+                <TableHead className="text-right">Equity %</TableHead>
                 <TableHead className="text-right">Ownership %</TableHead>
-                <TableHead className="text-right">Join Date</TableHead>
+                {/* <TableHead className="text-right">Ownership Shares</TableHead> */}
+                <TableHead className="text-right">Promised Shares</TableHead>
+                <TableHead className="text-right">Current Stock Value</TableHead>
+                {/* <TableHead className="text-right">Join Date</TableHead> */}
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -144,9 +155,15 @@ export default function StakeholdersPpage() {
                     </span>
                   </TableCell>
                   <TableCell className="text-right">{formatCurrency(stakeholder.totalInvestment)}</TableCell>
-                  <TableCell className="text-right">{formatNumber(stakeholder.totalShares)}</TableCell>
-                  <TableCell className="text-right">{0}%</TableCell>
-                  <TableCell className="text-right">{new Date(stakeholder.createdAt).toLocaleDateString()}</TableCell>
+                  <TableCell className="text-right">
+                    {formatNumber((stakeholder.ownedShares / totalOwnedShares) * 100)} %
+                  </TableCell>
+                  <TableCell className="text-right">
+                    {formatNumber((stakeholder.ownershipShares / totalOwnershipShares) * 100)}%
+                  </TableCell>
+                  <TableCell className="text-right">{formatNumber(stakeholder.promisedShares)}</TableCell>
+                  <TableCell className="text-right">{formatCurrency(stakeholder.stockValue)}</TableCell>
+                  {/* <TableCell className="text-right">{new Date(stakeholder.createdAt).toLocaleDateString()}</TableCell> */}
                 </TableRow>
               ))}
             </TableBody>
@@ -174,6 +191,7 @@ export default function StakeholdersPpage() {
                 <SelectContent>
                   {users
                     .map((user) => user.name)
+                    .filter((user) => !stakeholders.map((x) => x.name).includes(user))
                     .sort()
                     .map((type) => (
                       <SelectItem key={type} value={type}>

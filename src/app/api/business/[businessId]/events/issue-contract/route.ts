@@ -1,5 +1,5 @@
 import { prisma } from '@/lib/prisma';
-import { ContractDataType, EventType, GlobalStates, RoundType, ShareAllocationType, ShareType } from '@prisma/client';
+import { ContractType, EventType, GlobalStates, RoundType, ShareAllocationType, ShareType } from '@prisma/client';
 
 export async function POST(request: Request, { params }: { params: Promise<{ businessId: string }> }) {
   const { businessId } = await params;
@@ -13,7 +13,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ bus
       shares: number;
     };
     dilutions: {
-      name: string;
+      stakeholderId: string;
       shares: number;
     }[];
   };
@@ -29,22 +29,19 @@ export async function POST(request: Request, { params }: { params: Promise<{ bus
             stakeholderId: true,
           },
         },
+        warrantOptions: {
+          select: {
+            stakeholderId: true,
+            eventType: true,
+          },
+        },
       },
     });
-    const shareType = (contract.contractJson as any).shareType;
+
     const roundDb = await tx.rounds.create({
       data: {
         name: round.name,
-        type:
-          shareType === 'WARRANT'
-            ? RoundType.WARRANT
-            : shareType === 'OPTION'
-            ? RoundType.OPTION
-            : shareType === 'CONVERTIBLE_NOTE'
-            ? RoundType.CONVERTIBLE_NOTE
-            : shareType === 'SAFE'
-            ? RoundType.SAFE
-            : RoundType.SERIES_N,
+        type: RoundType.CONTRACT_ISSUE,
         businessId,
         createdAt,
       },
@@ -72,54 +69,47 @@ export async function POST(request: Request, { params }: { params: Promise<{ bus
       },
     });
 
-    const users = await tx.users.findMany({
-      where: {
-        name: { in: dilutions.map((d) => d.name) },
-      },
-      select: { id: true, name: true },
-    });
+    if (contract.investment) {
+      await tx.stakeholderEvents.create({
+        data: {
+          shares: round.shares,
+          createdAt,
+          stakeholderId: contract.investment.stakeholderId,
+          roundId: roundDb.id,
+          eventType:
+            contract.contractType === ContractType.CONVERTIBLE_NOTE
+              ? EventType.CONVERTIBLE_NOTE
+              : contract.contractType === ContractType.SAFE
+              ? EventType.SAFE
+              : EventType.INVESTMENT,
+          shareType: contract.shareType ?? ShareType.COMMON,
+          shareAllocationType: ShareAllocationType.CONTRACT_PRICE,
+          pricePerShare: Number(businessInfo?.postMoneyValuation ?? 0) / Number(businessInfo?.totalShares ?? 0),
+          contractId: contract.id,
+        },
+      });
+    } else if (contract.warrantOptions) {
+      await tx.stakeholderEvents.create({
+        data: {
+          shares: round.shares,
+          createdAt,
+          stakeholderId: contract.warrantOptions.stakeholderId,
+          roundId: roundDb.id,
+          eventType: contract.warrantOptions.eventType,
+          shareType: contract.shareType ?? ShareType.COMMON,
+          shareAllocationType: ShareAllocationType.CONTRACT_PRICE,
+          pricePerShare: contract.pricePerShare,
+          contractId: contract.id,
+        },
+      });
+    }
 
-    const userMap = new Map(users.map((user) => [user.name, user.id]));
-
-    const stakeholders = await tx.stakeholders.findMany({
-      where: { userId: { in: Array.from(userMap.values()) }, businessId },
-      select: { id: true, userId: true },
-    });
-
-    const stakeholderMap = new Map(stakeholders.map((stakeholder) => [stakeholder.userId, stakeholder.id]));
-
-    await tx.stakeholderEvents.create({
-      data: {
-        roundId: roundDb.id,
-        stakeholderId: contract.investment.stakeholderId,
-        contractId: contract.id,
-        shares: round.shares,
-        createdAt,
-        shareAllocationType: ShareAllocationType.CONTRACT_PRICE,
-        shareType: ShareType.COMMON,
-        eventType:
-          shareType === 'WARRANT'
-            ? EventType.WARRANT
-            : shareType === 'OPTION'
-            ? EventType.OPTION
-            : shareType === 'CONVERTIBLE_NOTE'
-            ? EventType.CONVERTIBLE_NOTE
-            : shareType === 'SAFE'
-            ? EventType.SAFE
-            : EventType.INVESTMENT,
-        pricePerShare: (contract.contractJson as any).pricePerShare,
-      },
-    });
-
-    const pendingShares = Number((contract.contractJson as any).shares) - round.shares;
+    const pendingShares = (contract.shares ?? 0) - round.shares;
 
     await tx.contracts.update({
       where: { id: round.contractId },
       data: {
-        contractJson: {
-          ...(contract.contractJson as any),
-          shares: pendingShares,
-        },
+        shares: pendingShares,
         status: pendingShares > 0 ? GlobalStates.PENDING : GlobalStates.COMPLETED,
       },
     });
@@ -127,7 +117,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ bus
     await tx.stakeholderEvents.createMany({
       data: dilutions.map((dilution) => ({
         roundId: roundDb.id,
-        stakeholderId: stakeholderMap.get(userMap.get(dilution.name)!)!,
+        stakeholderId: dilution.stakeholderId,
         shares: -dilution.shares,
         createdAt,
         shareAllocationType: ShareAllocationType.ACTUAL_PRICE,

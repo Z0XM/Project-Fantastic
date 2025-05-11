@@ -9,11 +9,20 @@ export async function GET(
 
   const pendingContracts = await prisma.contracts.findMany({
     where: {
-      investment: {
-        round: {
-          businessId: businessId,
+      OR: [
+        {
+          investment: {
+            round: {
+              businessId: businessId,
+            },
+          },
         },
-      },
+        {
+          warrantOptions: {
+            businessId: businessId,
+          },
+        },
+      ],
       status: (status as string) === 'ALL' ? undefined : GlobalStates.PENDING,
     },
   });
