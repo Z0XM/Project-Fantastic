@@ -55,7 +55,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ bus
     const sharesDiluted = dilutions.reduce((acc, dilusion) => acc + dilusion.shares, 0);
     const contractShares = investments.reduce((acc, investment) => {
       const contractShares = investment.contracts
-        .filter((c) => !c.contractType || c.contractType === ContractType.NONE)
+        .filter((c) => c.contractType === ContractType.NONE)
         .reduce((acc, contract) => acc + (contract.shares ?? 0), 0);
       return acc + contractShares;
     }, 0);
@@ -77,8 +77,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ bus
           investment.contracts.reduce(
             (acc, contract) =>
               acc +
-              (!contract.contractType || contract.contractType === ContractType.NONE
-                ? (contract.shares ?? 0) * investment.amount
+              (contract.contractType === ContractType.NONE
+                ? (contract.shares ?? 0) * Number(contract.pricePerShare ?? 0)
                 : Number(contract.investedAmount ?? 0)),
             0
           ),
@@ -106,6 +106,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ bus
         shareAllocationType: ShareAllocationType.ACTUAL_PRICE,
         shareType: ShareType.COMMON,
         eventType: EventType.INVESTMENT,
+        pricePerShare: round.preMoneyValuation / Number(businessInfo?.totalShares ?? 0),
       })),
     });
 
@@ -129,6 +130,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ bus
                   createdAt,
                   contractType: contract.contractType ?? undefined,
                   contractInvestment: contract.investedAmount ?? undefined,
+                  pricePerShare: contract.pricePerShare ?? undefined,
                 })),
               },
             },
@@ -149,7 +151,10 @@ export async function POST(request: Request, { params }: { params: Promise<{ bus
               roundId: investmentsDb.roundId,
               stakeholderId: investmentsDb.stakeholderId,
               shares: contract.shares!,
-              pricePerShare: contract.pricePerShare ?? undefined,
+              pricePerShare:
+                contract.contractType === ContractType.NONE
+                  ? Number(contract.pricePerShare ?? 0)
+                  : round.preMoneyValuation / Number(businessInfo?.totalShares ?? 0),
               createdAt,
               shareAllocationType: ShareAllocationType.CONTRACT_PRICE,
               shareType: ShareType.COMMON,

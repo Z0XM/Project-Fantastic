@@ -401,7 +401,7 @@ export default function BusinessPage() {
                       </defs>
                       <Area
                         dataKey="lastValuation"
-                        type="natural"
+                        type="linear"
                         fill="url(#filllastValuation)"
                         fillOpacity={0.4}
                         stroke="hsl(var(--chart-1))"
@@ -410,7 +410,7 @@ export default function BusinessPage() {
                       />
                       <Area
                         dataKey="firstValuation"
-                        type="natural"
+                        type="linear"
                         fill="url(#fillfirstValuation)"
                         fillOpacity={0.4}
                         stroke="hsl(var(--chart-2))"
@@ -419,7 +419,7 @@ export default function BusinessPage() {
                       />
                       <Area
                         dataKey="totalInvestment"
-                        type="natural"
+                        type="linear"
                         fill="url(#filltotalInvestment)"
                         fillOpacity={0.4}
                         stroke="hsl(var(--chart-3))"

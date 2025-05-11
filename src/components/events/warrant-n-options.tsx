@@ -45,7 +45,6 @@ const formSchema = z.object({
             title: z.string(),
             description: z.string().optional(),
             shares: z.coerce.number().min(0).optional(),
-            pricePerShare: z.coerce.number().min(0).optional(),
           })
         )
         .min(1, { message: 'At least one contract is required' }),
@@ -349,7 +348,6 @@ export default function WarrantNOptions({
                                         title: '',
                                         description: '',
                                         shares: 0,
-                                        pricePerShare: 0,
                                       })
                                     );
                                   }}
@@ -411,22 +409,6 @@ export default function WarrantNOptions({
                                       </FormItem>
                                     )}
                                   />
-                                  <FormField
-                                    control={form.control}
-                                    name={`grants.${index}.contracts.${
-                                      form.watch(`grants.${index}.contracts`).length - 1
-                                    }.pricePerShare`}
-                                    render={({ field }) => (
-                                      <FormItem>
-                                        <FormLabel>Price Per Share</FormLabel>
-                                        <FormControl>
-                                          <Input type="number" {...field} />
-                                        </FormControl>
-                                        <FormDescription>Price of each share as per the contract.</FormDescription>
-                                        <FormMessage />
-                                      </FormItem>
-                                    )}
-                                  />
 
                                   <div className="flex justify-end mt-4">
                                     <Button
@@ -464,8 +446,7 @@ export default function WarrantNOptions({
                                         )}
 
                                         <span className="ml-2 text-muted-foreground text-sm">
-                                          {formatNumber(contract.shares ?? 0)} shares{' '}
-                                          {'@ ' + formatCurrency(contract.pricePerShare ?? 0)}
+                                          {formatNumber(contract.shares ?? 0)} shares
                                         </span>
                                       </div>
                                       <Button

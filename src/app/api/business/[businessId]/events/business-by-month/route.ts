@@ -16,9 +16,11 @@ export async function GET(request: Request, { params }: { params: Promise<{ busi
               contracts: {
                 where: {
                   status: GlobalStates.COMPLETED,
-                  contractType: ContractType.NONE,
                 },
                 select: {
+                  contractType: true,
+                  pricePerShare: true,
+                  shares: true,
                   contractInvestment: true,
                 },
               },
@@ -71,6 +73,9 @@ export async function GET(request: Request, { params }: { params: Promise<{ busi
     const totalInvestment = events.reduce((acc, event) => {
       const investments = event.round.investments.reduce((sum, investment) => {
         const contractInvestment = investment.contracts.reduce((sum, contract) => {
+          if (contract.contractType === ContractType.NONE) {
+            return sum + Number(contract.shares ?? 0) * Number(contract.pricePerShare ?? 0);
+          }
           return sum + Number(contract?.contractInvestment ?? 0);
         }, 0);
         return sum + Number(investment.amount) + contractInvestment;

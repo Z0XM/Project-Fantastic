@@ -39,7 +39,14 @@ export async function GET(request: Request, { params }: { params: Promise<{ busi
       stakeholder.investments.reduce((acc, investment) => acc + Number(investment.amount), 0) +
       stakeholder.investments.reduce(
         (acc, investment) =>
-          acc + investment.contracts.reduce((accy, c) => accy + Number(c.contractInvestment ?? 0), 0),
+          acc +
+          investment.contracts.reduce(
+            (accy, c) =>
+              accy + c.contractType === ContractType.NONE
+                ? Number(c.shares ?? 0) * Number(c.pricePerShare ?? 0)
+                : Number(c.contractInvestment ?? 0),
+            0
+          ),
         0
       ),
     ownedShares: stakeholder.stakeholderEvents.reduce((acc, event) => acc + Number(event.shares), 0),

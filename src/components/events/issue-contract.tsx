@@ -255,7 +255,7 @@ export default function IssueContracts({
                         <div className="text-md">
                           <div className={` text-md`}>
                             {formatCurrency(
-                              contractMap[form.watch('round.contractId')]?.warrantOptionsId
+                              contractMap[form.watch('round.contractId')]?.contractType === ContractType.NONE
                                 ? Number(contractMap[form.watch('round.contractId')]?.pricePerShare ?? 0)
                                 : Number(businessInfo?.postMoneyValuation ?? 0) / Number(businessInfo?.totalShares ?? 0)
                             )}

@@ -84,7 +84,10 @@ export async function POST(request: Request, { params }: { params: Promise<{ bus
               : EventType.INVESTMENT,
           shareType: contract.shareType ?? ShareType.COMMON,
           shareAllocationType: ShareAllocationType.CONTRACT_PRICE,
-          pricePerShare: Number(businessInfo?.postMoneyValuation ?? 0) / Number(businessInfo?.totalShares ?? 0),
+          pricePerShare:
+            contract.contractType === ContractType.NONE
+              ? Number(contract.pricePerShare ?? 0)
+              : Number(businessInfo?.postMoneyValuation ?? 0) / Number(businessInfo?.totalShares ?? 0),
           contractId: contract.id,
         },
       });
@@ -98,7 +101,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ bus
           eventType: contract.warrantOptions.eventType,
           shareType: contract.shareType ?? ShareType.COMMON,
           shareAllocationType: ShareAllocationType.CONTRACT_PRICE,
-          pricePerShare: contract.pricePerShare,
+          pricePerShare: Number(businessInfo?.postMoneyValuation ?? 0) / Number(businessInfo?.totalShares ?? 0),
           contractId: contract.id,
         },
       });
