@@ -77,12 +77,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                   url: business ? `/business/${business.id}/dashboards/overview` : '#',
                 },
                 {
-                  title: 'Timelines',
-                  url: '#',
-                },
-                {
-                  title: 'Advanced Analytics',
-                  url: '#',
+                  title: 'Timeline',
+                  url: business ? `/business/${business.id}/dashboards/timeline` : '#',
                 },
               ],
             },
