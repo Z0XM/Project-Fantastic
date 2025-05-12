@@ -102,7 +102,7 @@ export async function POST(request: NextRequest) {
         ...body.messages,
       ],
       max_completion_tokens: 10000,
-      model: 'gpt-35-turbo',
+      model: 'gpt-3.5-turbo',
     });
 
     const response = completion.choices[0].message.content;
