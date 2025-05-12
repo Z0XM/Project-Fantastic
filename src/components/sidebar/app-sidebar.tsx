@@ -47,26 +47,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         <NavSuper
           items={[
             {
-              title: 'Multiverses',
-              url: '#',
-              icon: SquareTerminal,
-              isActive: true,
-              items: [
-                {
-                  title: 'Visit A Universe',
-                  url: '#',
-                },
-                {
-                  title: 'Create A Universe',
-                  url: '#',
-                },
-                {
-                  title: 'Compare Universes',
-                  url: '#',
-                },
-              ],
-            },
-            {
               title: 'Dashboards',
               url: '#',
               icon: BookOpen,
@@ -77,12 +57,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                   url: business ? `/business/${business.id}/dashboards/overview` : '#',
                 },
                 {
-                  title: 'Timelines',
-                  url: '#',
-                },
-                {
-                  title: 'Advanced Analytics',
-                  url: '#',
+                  title: 'Timeline',
+                  url: business ? `/business/${business.id}/dashboards/timeline` : '#',
                 },
               ],
             },
@@ -109,7 +85,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           projects={[
             {
               name: 'Create Future Plans',
-              url: '#',
+              url: business ? `/business/${business.id}/magic/future` : '#',
               icon: Frame,
             },
             {
