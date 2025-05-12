@@ -9,22 +9,16 @@ export async function GET(request: Request, { params }: { params: Promise<{ busi
     },
     include: {
       investments: {
-        include: {
-          stakeholder: {
-            include: {
-              user: {
-                select: { name: true },
-              },
-            },
-          },
-          contracts: true,
+        select: {
+          stakeholderId: true,
+          amount: true,
         },
       },
       businessEvents: true,
       stakeholderEvents: {
         include: {
           stakeholder: {
-            include: {
+            select: {
               user: {
                 select: { name: true },
               },

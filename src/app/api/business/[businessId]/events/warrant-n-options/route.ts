@@ -13,7 +13,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ bus
     };
     grants: {
       stakeholderId: string;
-      contracts: { title: string; description: string; shares?: number; pricePerShare?: number }[];
+      contracts: { title: string; description: string; shares?: number }[];
       notes?: string;
     }[];
   };
@@ -36,7 +36,6 @@ export async function POST(request: Request, { params }: { params: Promise<{ bus
                   title: contract.title,
                   description: contract.description,
                   shares: contract.shares,
-                  pricePerShare: contract.pricePerShare,
                   createdAt,
                   status: GlobalStates.PENDING,
                   shareType: event.type === EventType.OPTION ? ShareType.OPTION : ShareType.COMMON,

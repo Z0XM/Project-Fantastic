@@ -150,7 +150,7 @@ export default function EventRaiseARound({
           (acc, x) =>
             acc +
             x.contracts
-              .filter((x) => !x.contractType || x.contractType === ContractType.NONE)
+              .filter((x) => x.contractType === ContractType.NONE)
               .reduce((accy, y) => accy + Number(y.shares), 0),
           0
         )) +
@@ -296,7 +296,18 @@ export default function EventRaiseARound({
                       oldValuation={Number(businessInfo?.postMoneyValuation ?? 0)}
                       preMoneyValuation={Number(form.watch('round.preMoneyValuation') ?? 0)}
                       investment={
-                        form.watch('investments').reduce((acc, x) => acc + Number(x.amount), 0) +
+                        form
+                          .watch('investments')
+                          .reduce(
+                            (acc, x) =>
+                              acc +
+                              (form.watch('round.type') === RoundType.BOOTSTRAP
+                                ? Number(x.amount)
+                                : Number(x.shares) *
+                                  (Number(form.watch(`round.preMoneyValuation`)) /
+                                    Number(businessInfo?.totalShares ?? 0))),
+                            0
+                          ) +
                         form
                           .watch('investments')
                           .reduce(
@@ -305,7 +316,7 @@ export default function EventRaiseARound({
                               x.contracts.reduce(
                                 (accy, y) =>
                                   accy +
-                                  (!y.contractType || y.contractType == ContractType.NONE
+                                  (y.contractType === ContractType.NONE
                                     ? Number(y.shares ?? 0) * Number(y.pricePerShare ?? 0)
                                     : Number(y.investedAmount ?? 0)),
                                 0
@@ -323,7 +334,7 @@ export default function EventRaiseARound({
                               (acc, x) =>
                                 acc +
                                 x.contracts
-                                  .filter((c) => !c.contractType || c.contractType === ContractType.NONE)
+                                  .filter((c) => c.contractType === ContractType.NONE)
                                   .reduce((accy, y) => accy + Number(y.shares ?? 0), 0),
                               0
                             )) +
@@ -550,7 +561,7 @@ export default function EventRaiseARound({
                                     }.contractType`}
                                     render={({ field }) => (
                                       <FormItem>
-                                        <FormLabel>Round Type</FormLabel>
+                                        <FormLabel>Contract Type</FormLabel>
                                         <FormControl>
                                           <Select onValueChange={field.onChange} {...field}>
                                             <SelectTrigger className="w-[180px]">
@@ -611,7 +622,24 @@ export default function EventRaiseARound({
                                     `investments.${index}.contracts.${
                                       form.watch(`investments.${index}.contracts`).length - 1
                                     }.contractType`
-                                  ) === ContractType.NONE ? null : (
+                                  ) === ContractType.NONE ? (
+                                    <FormField
+                                      control={form.control}
+                                      name={`investments.${index}.contracts.${
+                                        form.watch(`investments.${index}.contracts`).length - 1
+                                      }.pricePerShare`}
+                                      render={({ field }) => (
+                                        <FormItem>
+                                          <FormLabel>Price Per Share</FormLabel>
+                                          <FormControl>
+                                            <Input type="number" {...field} />
+                                          </FormControl>
+                                          <FormDescription>Price of each share as per the contract.</FormDescription>
+                                          <FormMessage />
+                                        </FormItem>
+                                      )}
+                                    />
+                                  ) : (
                                     <FormField
                                       control={form.control}
                                       name={`investments.${index}.contracts.${
