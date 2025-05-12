@@ -91,7 +91,7 @@ export async function POST(request: NextRequest) {
           The user is on one of the pages of the platform and has asked a question.
           This is some of the infomation that the user is ablle to see on the page:
           ${body.aicontextStrings?.join('\n') ?? ''}
-          This is the context of the conversation so far:
+          This is the context which has similarities to the user's question:
           ${context}
           This is the latest question from the user:
           ${latestUserMessage.content}

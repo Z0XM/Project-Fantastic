@@ -76,7 +76,7 @@ export function CommandMenu() {
           ...prev,
           {
             role: 'assistant',
-            content: json.response.content,
+            content: json.data.content,
           },
         ]);
       }
