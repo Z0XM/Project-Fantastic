@@ -31,6 +31,33 @@ export default function StakeholdersPpage() {
     queryFn: async () => {
       const response = await fetch(`/api/business/${businessId}/info`);
       const data = await response.json();
+      dispatch(
+        setMultipleContext([
+          {
+            key: 'totalShares',
+            contextString: `${Number(businessInfo?.totalShares ?? 0)} is the total no. of shares in the company`,
+            rawValue: Number(businessInfo?.totalShares ?? 0),
+          },
+          {
+            key: 'balanceShares',
+            contextString: `${Number(
+              businessInfo?.balanceShares ?? 0
+            )} is the total no. of balance shares in the company`,
+            rawValue: Number(businessInfo?.balanceShares ?? 0),
+          },
+          {
+            key: 'currentValuation',
+            contextString: `${Number(businessInfo?.postMoneyValuation ?? 0)} is the current valuation and post money valuation of the last round of the company`,
+            rawValue: Number(businessInfo?.postMoneyValuation ?? 0),
+          },
+          {
+            key: 'preMoneyValuation',
+            contextString: `${Number(businessInfo?.preMoneyValuation ?? 0)} is the pre money valuation of the last round of the company`,
+            rawValue: Number(businessInfo?.preMoneyValuation ?? 0),
+          }
+        ])
+      );
+      
       return (data.businessInfo ?? null) as BusinessEvents | null;
     },
   });
@@ -60,23 +87,6 @@ export default function StakeholdersPpage() {
             key: 'totalOwnedShares',
             contextString: `${data.totalOwnedShares} is the total no. of shares with stakeholders`,
             rawValue: data.totalOwnedShares,
-          },
-          {
-            key: 'totalShares',
-            contextString: `${Number(businessInfo?.totalShares ?? 0)} is the total no. of shares in the company`,
-            rawValue: Number(businessInfo?.totalShares ?? 0),
-          },
-          {
-            key: 'balanceShares',
-            contextString: `${Number(
-              businessInfo?.balanceShares ?? 0
-            )} is the total no. of balance shares in the company`,
-            rawValue: Number(businessInfo?.balanceShares ?? 0),
-          },
-          {
-            key: 'currentValuation',
-            contextString: `${Number(businessInfo?.postMoneyValuation ?? 0)} is the current valuation of the company`,
-            rawValue: Number(businessInfo?.postMoneyValuation ?? 0),
           },
           {
             key: 'totalInvestment',

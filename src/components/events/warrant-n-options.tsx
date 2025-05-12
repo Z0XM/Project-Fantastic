@@ -18,6 +18,8 @@ import { Button } from '../ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Plus, Trash2, FilePlus, File } from 'lucide-react';
 import { cn, formatCurrency, formatDate, formatEnum, formatNumber } from '@/lib/utils';
+import { useAppDispatch, useAppSelector } from '@/hooks/store';
+import { setMultipleContext } from '@/lib/slices/aiContext';
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '../ui/form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -62,12 +64,38 @@ export default function WarrantNOptions({
   setIsDialogOpen: Dispatch<SetStateAction<boolean>>;
 }) {
   const { businessId } = useParams();
-
+  const dispatch = useAppDispatch();
   const businessInfoQuery = useQuery({
     queryKey: ['businessInfo', businessId],
     queryFn: async () => {
       const response = await fetch(`/api/business/${businessId}/info`);
       const data = await response.json();
+      dispatch(
+        setMultipleContext([
+          {
+            key: 'totalShares',
+            contextString: `${Number(businessInfo?.totalShares ?? 0)} is the total no. of shares in the company before this round`,
+            rawValue: Number(businessInfo?.totalShares ?? 0),
+          },
+          {
+            key: 'balanceShares',
+            contextString: `${Number(
+              businessInfo?.balanceShares ?? 0
+            )} is the total no. of balance shares in the company before this round`,
+            rawValue: Number(businessInfo?.balanceShares ?? 0),
+          },
+          {
+            key: 'currentValuation',
+            contextString: `${Number(businessInfo?.postMoneyValuation ?? 0)} is the current valuation and post money valuation of the last round of the company`,
+            rawValue: Number(businessInfo?.postMoneyValuation ?? 0),
+          },
+          {
+            key: 'preMoneyValuation',
+            contextString: `${Number(businessInfo?.preMoneyValuation ?? 0)} is the pre money valuation of the last round of the company`,
+            rawValue: Number(businessInfo?.preMoneyValuation ?? 0),
+          }
+        ])
+      );
       return (data.businessInfo ?? null) as BusinessEvents | null;
     },
   });
