@@ -45,6 +45,7 @@ export default function Timeline() {
   const businessInfo = businessInfoQuery.data;
 
   const [selectedDateIndex, setSelectedDateIndex] = useState(0);
+  const [sliderVal, setSliderVal] = useState(0);
   const [dates, setDates] = useState<number[]>([]);
 
   const timelineQuery = useQuery({
@@ -54,6 +55,7 @@ export default function Timeline() {
       const data = await response.json();
       setDates(Object.keys(data).map((x) => Number(x)));
       setSelectedDateIndex(Object.keys(data).length - 1);
+      setSliderVal(99);
       return data as {
         [key: string]: {
           preMoneyValuation: number;
@@ -127,7 +129,18 @@ export default function Timeline() {
   const timeline = timelineQuery.data ?? {};
 
   return (
-    <div className="mx-auto p-4 md:p-6 container">
+    <div
+      className="mx-auto p-4 md:p-6 container"
+      onWheel={(e) => {
+        // e.preventDefault();
+        const delta = e.deltaY > 0 ? -1 : 1;
+        const currentValue = sliderVal;
+        const newValue = Math.max(0, Math.min(99, sliderVal + delta * dates.length));
+        const dateIndex = Math.floor(newValue / (100 / dates.length));
+        setSelectedDateIndex(dateIndex);
+        setSliderVal(newValue);
+      }}
+    >
       <div className="flex md:flex-row flex-col justify-between items-start md:items-center gap-4 mb-8">
         <div>
           <h1 className="mb-2 font-bold text-3xl">Timeline View</h1>
@@ -286,16 +299,18 @@ export default function Timeline() {
           </div>
           <div className="flex items-center bg-gradient-to-b from-pastel-blue/20 via-pastel-purple/20 to-pastel-green/20 px-6 py-8 rounded-lg h-full">
             <Slider
-              defaultValue={[99]}
+              //   value={[Math.floor(selectedDateIndex * (100 / dates.length))]}
+              value={[sliderVal]}
               onValueChange={(value) => {
                 const dateIndex = Math.floor(value[0] / (100 / dates.length));
                 setSelectedDateIndex(dateIndex);
+                setSliderVal(value[0]);
               }}
               orientation="vertical"
               step={1}
               min={0}
               max={99}
-              className="h-full"
+              className="cursor-pointer"
             />
           </div>
           <div className="bg-pastel-blue mt-4 px-3 py-1.5 rounded-md w-full font-medium text-sm text-center">
