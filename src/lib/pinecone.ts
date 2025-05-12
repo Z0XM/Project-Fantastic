@@ -30,7 +30,7 @@ export const pineconeIndex = pinecone.Index(process.env.PINECONE_INDEX_NAME!);
 const verifyConnection = async () => {
   try {
     // Try to fetch index stats
-    await pineconeIndex.fetch([{ id: 'test-connection' }]);
+    await pineconeIndex.fetch(['test-connection']);
     console.log('Successfully connected to Pinecone index:', process.env.PINECONE_INDEX_NAME);
   } catch (error) {
     if (error instanceof Error && error.message.includes('not found')) {
@@ -43,4 +43,4 @@ const verifyConnection = async () => {
 };
 
 // Run verification
-verifyConnection().catch(console.error); 
+verifyConnection().catch(console.error);

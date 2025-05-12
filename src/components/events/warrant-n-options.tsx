@@ -1,6 +1,6 @@
 'use client';
 
-import { Dispatch, SetStateAction, useEffect, useState } from 'react';
+import { Dispatch, SetStateAction, useState } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -143,7 +143,7 @@ export default function WarrantNOptions({
       queryClient.invalidateQueries({ queryKey: ['events', businessId] });
       queryClient.invalidateQueries({ queryKey: ['contracts', businessId] });
     },
-    onError: (error) => {
+    onError: () => {
       toast.error(`Error allocating shares!`);
     },
   });
@@ -369,7 +369,7 @@ export default function WarrantNOptions({
                                   variant="outline"
                                   size="sm"
                                   type="button"
-                                  onClick={(e) => {
+                                  onClick={() => {
                                     form.setValue(
                                       `grants.${index}.contracts`,
                                       form.getValues(`grants.${index}.contracts`).concat({

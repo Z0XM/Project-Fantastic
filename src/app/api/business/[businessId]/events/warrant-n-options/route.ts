@@ -1,5 +1,5 @@
 import { prisma } from '@/lib/prisma';
-import { ContractType, EventType, GlobalStates, RoundType, ShareType } from '@prisma/client';
+import { ContractType, EventType, GlobalStates, ShareType } from '@prisma/client';
 
 export async function POST(request: Request, { params }: { params: Promise<{ businessId: string }> }) {
   const { businessId } = await params;

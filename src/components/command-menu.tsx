@@ -1,17 +1,10 @@
 'use client';
 
-import {
-  CommandDialog,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from '@/components/ui/command';
+import { CommandDialog, CommandEmpty, CommandInput, CommandList } from '@/components/ui/command';
 import { useAppSelector } from '@/hooks/store';
 import { useEffect, useState } from 'react';
 import { Button } from './ui/button';
-import { Clock, Trash } from '@phosphor-icons/react';
+import { Trash } from '@phosphor-icons/react';
 import { Badge } from './ui/badge';
 
 interface Message {
@@ -138,18 +131,21 @@ export function CommandMenu() {
         <div className="flex flex-col gap-2 py-2">
           {messages.map((message, index) =>
             message.role === 'user' ? (
-              <div key={index} className="flex items-center gap-2 bg-accent py-1 text-xs">
+              <div
+                key={index}
+                className="flex items-center gap-2 bg-accent p-1 py-1 rounded-md text-xs whitespace-pre-wrap"
+              >
                 <Badge variant={'outline'} className="bg-pastel-green">
                   You
                 </Badge>
-                {message.content}
+                <div className="whitespace-pre-wrap">{message.content}</div>
               </div>
             ) : (
-              <div key={index} className="flex items-center gap-2 bg-accent py-1 text-xs">
+              <div key={index} className="flex items-start gap-2 bg-accent p-1 py-1 rounded-md text-xs">
                 <Badge variant={'outline'} className="bg-pastel-lavender">
                   AI
                 </Badge>
-                {message.content}
+                <div className="whitespace-pre-wrap">{message.content}</div>
               </div>
             )
           )}

@@ -10,14 +10,7 @@ import { useAppDispatch, useAppSelector } from '@/hooks/store';
 import { setMultipleContext } from '@/lib/slices/aiContext';
 import { formatCurrency, formatDate, formatDateLong, formatEnum, formatNumber } from '@/lib/utils';
 import { Briefcase, Plus } from '@phosphor-icons/react';
-import {
-  BusinessEvents,
-  Investments,
-  Rounds,
-  ShareAllocationType,
-  StakeholderEvents,
-  Stakeholders,
-} from '@prisma/client';
+import { BusinessEvents, Investments, Rounds, StakeholderEvents } from '@prisma/client';
 import { useQuery } from '@tanstack/react-query';
 import { ChevronDown, ChevronRight, CircleDollarSign, DollarSign } from 'lucide-react';
 import Link from 'next/link';

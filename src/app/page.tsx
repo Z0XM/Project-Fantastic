@@ -11,11 +11,10 @@ import { useQuery } from '@tanstack/react-query';
 import Loading from '@/components/loading';
 import { Business } from '@prisma/client/edge';
 import { ArrowUpRight } from '@phosphor-icons/react';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { ChartBar, ChartPie, FileText, LayoutDashboard, Plus } from 'lucide-react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { ChartBar, ChartPie, FileText } from 'lucide-react';
 
 export default function Home() {
   const [open, setOpen] = React.useState(false);
@@ -205,7 +204,7 @@ export default function Home() {
                 <CardDescription>Track all equity holders and their ownership percentages</CardDescription>
               </CardHeader>
               <CardContent>
-                <p>Full visibility into your company's ownership structure with detailed equity breakdowns.</p>
+                <p>Full visibility into your company&apos;s ownership structure with detailed equity breakdowns.</p>
               </CardContent>
             </Card>
 

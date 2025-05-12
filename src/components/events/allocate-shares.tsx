@@ -1,6 +1,6 @@
 'use client';
 
-import { Dispatch, SetStateAction, useEffect, useState } from 'react';
+import { Dispatch, SetStateAction, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -22,11 +22,9 @@ import { setMultipleContext } from '@/lib/slices/aiContext';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Controller, useForm } from 'react-hook-form';
 import { z } from 'zod';
-import { BusinessEvents, RoundType, Stakeholders } from '@prisma/client';
+import { BusinessEvents, RoundType } from '@prisma/client';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useParams } from 'next/navigation';
-import { Label } from 'recharts';
-import { Badge } from '../ui/badge';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 const formSchema = z.object({
@@ -100,7 +98,7 @@ export default function AllocateShares({
       queryClient.invalidateQueries({ queryKey: ['stakeholders', businessId] });
       queryClient.invalidateQueries({ queryKey: ['events', businessId] });
     },
-    onError: (error) => {
+    onError: () => {
       toast.error(`Error allocating shares!`);
     },
   });

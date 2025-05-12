@@ -135,7 +135,7 @@ export default function BusinessPage() {
   });
 
   const stakeholders = stakeholdersQuery.data?.stakeholders ?? [];
-  const totalOwnershipShares = stakeholdersQuery.data?.totalOwnershipShares ?? 0;
+  // const totalOwnershipShares = stakeholdersQuery.data?.totalOwnershipShares ?? 0;
   const totalOwnedShares = stakeholdersQuery.data?.totalOwnedShares ?? 0;
   const totalInvestment = stakeholdersQuery.data?.totalInvestment ?? 0;
 

@@ -1,6 +1,6 @@
 'use client';
 
-import { Dispatch, SetStateAction, useEffect, useState } from 'react';
+import { Dispatch, SetStateAction } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -10,21 +10,18 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { toast } from 'sonner';
 import { Button } from '../ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Plus, Trash2, FilePlus, File } from 'lucide-react';
+import { Plus, Trash2 } from 'lucide-react';
 import { cn, formatCurrency, formatDate, formatEnum, formatNumber } from '@/lib/utils';
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '../ui/form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Controller, useForm } from 'react-hook-form';
 import { z } from 'zod';
-import { BusinessEvents, Contracts, ContractType, RoundType, ShareType, Stakeholders } from '@prisma/client';
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from '../ui/sheet';
+import { BusinessEvents, Contracts, ContractType, Stakeholders } from '@prisma/client';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useParams } from 'next/navigation';
@@ -114,7 +111,7 @@ export default function IssueContracts({
       queryClient.invalidateQueries({ queryKey: ['events', businessId] });
       queryClient.invalidateQueries({ queryKey: ['contracts', businessId] });
     },
-    onError: (error) => {
+    onError: () => {
       toast.error(`Error allocating shares!`);
     },
   });
