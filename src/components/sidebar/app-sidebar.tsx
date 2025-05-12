@@ -85,7 +85,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           projects={[
             {
               name: 'Create Future Plans',
-              url: '#',
+              url: business ? `/business/${business.id}/magic/future` : '#',
               icon: Frame,
             },
             {

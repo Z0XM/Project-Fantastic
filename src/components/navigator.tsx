@@ -25,6 +25,7 @@ export default function Navigator() {
       else if (path === 'events') pathList.push({ title: 'Events', link: `/business/${businessId}/events` });
       else if (path === 'stakeholders')
         pathList.push({ title: 'Stakeholders', link: `/business/${businessId}/stakeholders` });
+      else if (path === 'magic') pathList.push({ title: 'Magic', link: `/business/${businessId}/magic/future` });
     } else if (index === 1) {
       if (restPath[0] === 'dashboards' && path === 'overview')
         pathList.push({ title: 'Overview', link: `/business/${businessId}/dashboards/overview` });
