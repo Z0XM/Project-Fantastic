@@ -137,7 +137,7 @@ export default function EventRaiseARound({
       queryClient.invalidateQueries({ queryKey: ['events', businessId] });
       queryClient.invalidateQueries({ queryKey: ['contracts', businessId] });
     },
-    onError: (error) => {
+    onError: () => {
       toast.error(`Error allocating shares!`);
     },
   });
@@ -515,7 +515,7 @@ export default function EventRaiseARound({
                                   variant="outline"
                                   size="sm"
                                   type="button"
-                                  onClick={(e) => {
+                                  onClick={() => {
                                     form.setValue(
                                       `investments.${index}.contracts`,
                                       form.getValues(`investments.${index}.contracts`).concat({

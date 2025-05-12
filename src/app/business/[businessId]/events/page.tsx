@@ -8,14 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { formatCurrency, formatDate, formatDateLong, formatEnum, formatNumber } from '@/lib/utils';
 import { Briefcase, Plus } from '@phosphor-icons/react';
-import {
-  BusinessEvents,
-  Investments,
-  Rounds,
-  ShareAllocationType,
-  StakeholderEvents,
-  Stakeholders,
-} from '@prisma/client';
+import { BusinessEvents, Investments, Rounds, StakeholderEvents } from '@prisma/client';
 import { useQuery } from '@tanstack/react-query';
 import { ChevronDown, ChevronRight, CircleDollarSign, DollarSign } from 'lucide-react';
 import Link from 'next/link';

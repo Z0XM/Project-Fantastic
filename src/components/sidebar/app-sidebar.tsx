@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { BookOpen, Frame, GalleryVerticalEnd, Map, PieChart, Settings2, SquareTerminal } from 'lucide-react';
+import { BookOpen, Frame, GalleryVerticalEnd, Map, PieChart, Settings2 } from 'lucide-react';
 
 import { NavSuper } from './nav-super';
 import { NavMagical } from './nav-magical';

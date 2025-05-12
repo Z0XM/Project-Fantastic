@@ -106,7 +106,6 @@ export async function POST(request: NextRequest) {
     });
 
     const response = completion.choices[0].message.content;
-    ``;
     // Store the conversation in Pinecone
     const responseEmbedding = await openAIEmbeddings.embeddings.create({
       model: 'text-embedding-3-small',
@@ -136,14 +135,14 @@ export async function POST(request: NextRequest) {
         content: response,
       },
     });
-  } catch (error: any) {
+  } catch (error) {
     console.error('Chat error:', error);
     return NextResponse.json(
       {
         success: false,
-        error: error.message ?? 'Unknown error',
+        error: (error as any).message ?? 'Unknown error',
         details: error,
-        stack: error.stack,
+        stack: (error as any).stack,
       },
       { status: 500 }
     );

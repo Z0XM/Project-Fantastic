@@ -5,7 +5,6 @@ import GrantExit from '@/components/events/grant-exit';
 import IssueContracts from '@/components/events/issue-contract';
 import EventRaiseARound from '@/components/events/raise-a-round';
 import WarrantNOptions from '@/components/events/warrant-n-options';
-import { Button } from '@/components/ui/button';
 
 import { Card, CardContent } from '@/components/ui/card';
 import { ArrowUp, Award, ExternalLinkIcon, FileText, Users } from 'lucide-react';

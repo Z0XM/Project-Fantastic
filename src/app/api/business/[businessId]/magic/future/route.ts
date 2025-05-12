@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { AzureOpenAI } from 'openai';
 import { pineconeIndex } from '@/lib/pinecone';
-import { z } from 'zod';
 import { capTableInfo } from '@/app/api/chat/info';
 import { prisma } from '@/lib/prisma';
 
@@ -67,7 +66,6 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     });
 
     const response = completion.choices[0].message.content;
-    ``;
     // Store the conversation in Pinecone
     const responseEmbedding = await openAIEmbeddings.embeddings.create({
       model: 'text-embedding-3-small',

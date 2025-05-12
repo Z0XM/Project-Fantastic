@@ -1,17 +1,10 @@
 'use client';
 
-import {
-  CommandDialog,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from '@/components/ui/command';
+import { CommandDialog, CommandEmpty, CommandInput, CommandList } from '@/components/ui/command';
 import { useAppSelector } from '@/hooks/store';
 import { useEffect, useState } from 'react';
 import { Button } from './ui/button';
-import { Clock, Trash } from '@phosphor-icons/react';
+import { Trash } from '@phosphor-icons/react';
 import { Badge } from './ui/badge';
 
 interface Message {
@@ -139,9 +132,6 @@ export function CommandMenu() {
           {messages.map((message, index) =>
             message.role === 'user' ? (
               <div
-               
-               
-              
                 key={index}
                 className="flex items-center gap-2 bg-accent p-1 py-1 rounded-md text-xs whitespace-pre-wrap"
               >

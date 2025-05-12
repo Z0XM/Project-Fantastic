@@ -3,22 +3,7 @@
 import { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Slider } from '@/components/ui/slider';
-import { format } from 'date-fns';
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  LineChart,
-  Line,
-  LabelList,
-  PieChart,
-  Pie,
-  Cell,
-} from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, LabelList, PieChart, Pie, Cell } from 'recharts';
 import {
   ChartContainer,
   ChartLegend,
@@ -30,19 +15,19 @@ import { useParams } from 'next/navigation';
 import { BusinessEvents } from '@prisma/client';
 import { useQuery } from '@tanstack/react-query';
 import Loading from '@/components/loading';
-import { formatDate, formatDateLong, formatEnum, formatNumber } from '@/lib/utils';
+import { formatDate, formatDateLong, formatNumber } from '@/lib/utils';
 
 export default function Timeline() {
   const { businessId } = useParams();
-  const businessInfoQuery = useQuery({
-    queryKey: ['businessInfo', businessId],
-    queryFn: async () => {
-      const response = await fetch(`/api/business/${businessId}/info`);
-      const data = await response.json();
-      return (data.businessInfo ?? null) as BusinessEvents | null;
-    },
-  });
-  const businessInfo = businessInfoQuery.data;
+  // const businessInfoQuery = useQuery({
+  //   queryKey: ['businessInfo', businessId],
+  //   queryFn: async () => {
+  //     const response = await fetch(`/api/business/${businessId}/info`);
+  //     const data = await response.json();
+  //     return (data.businessInfo ?? null) as BusinessEvents | null;
+  //   },
+  // });
+  // const businessInfo = businessInfoQuery.data;
 
   const [selectedDateIndex, setSelectedDateIndex] = useState(0);
   const [sliderVal, setSliderVal] = useState(0);
@@ -126,7 +111,7 @@ export default function Timeline() {
     );
   }
 
-  const timeline = timelineQuery.data ?? {};
+  // const timeline = timelineQuery.data ?? {};
 
   return (
     <div
@@ -134,7 +119,7 @@ export default function Timeline() {
       onWheel={(e) => {
         // e.preventDefault();
         const delta = e.deltaY > 0 ? -1 : 1;
-        const currentValue = sliderVal;
+        // const currentValue = sliderVal;
         const newValue = Math.max(0, Math.min(99, sliderVal + delta * dates.length));
         const dateIndex = Math.floor(newValue / (100 / dates.length));
         setSelectedDateIndex(dateIndex);

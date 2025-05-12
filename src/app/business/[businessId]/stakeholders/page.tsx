@@ -13,7 +13,6 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { formatCurrency, formatEnum, formatNumber } from '@/lib/utils';
 import { setMultipleContext } from '@/lib/slices/aiContext';
@@ -181,7 +180,7 @@ export default function StakeholdersPpage() {
           </CardHeader>
           <CardContent>
             <div className="font-bold text-2xl">{formatCurrency(Number(businessInfo?.postMoneyValuation ?? 0))}</div>
-            <p className="mt-1 text-muted-foreground text-xs">Company's estimated worth</p>
+            <p className="mt-1 text-muted-foreground text-xs">Company&apos;s estimated worth</p>
           </CardContent>
         </Card>
 

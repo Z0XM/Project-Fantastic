@@ -1,5 +1,5 @@
 import { prisma } from '@/lib/prisma';
-import { ContractType, EventType, ShareType } from '@prisma/client';
+import { ContractType, EventType } from '@prisma/client';
 
 export async function GET(request: Request, { params }: { params: Promise<{ businessId: string }> }) {
   const { businessId } = await params;
