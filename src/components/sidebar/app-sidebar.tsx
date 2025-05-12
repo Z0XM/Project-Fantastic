@@ -47,26 +47,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         <NavSuper
           items={[
             {
-              title: 'Multiverses',
-              url: '#',
-              icon: SquareTerminal,
-              isActive: true,
-              items: [
-                {
-                  title: 'Visit A Universe',
-                  url: '#',
-                },
-                {
-                  title: 'Create A Universe',
-                  url: '#',
-                },
-                {
-                  title: 'Compare Universes',
-                  url: '#',
-                },
-              ],
-            },
-            {
               title: 'Dashboards',
               url: '#',
               icon: BookOpen,
