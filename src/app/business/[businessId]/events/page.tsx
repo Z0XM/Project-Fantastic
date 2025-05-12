@@ -6,6 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useAppDispatch, useAppSelector } from '@/hooks/store';
+import { setMultipleContext } from '@/lib/slices/aiContext';
 import { formatCurrency, formatDate, formatDateLong, formatEnum, formatNumber } from '@/lib/utils';
 import { Briefcase, Plus } from '@phosphor-icons/react';
 import { BusinessEvents, Investments, Rounds, StakeholderEvents } from '@prisma/client';
@@ -23,6 +25,7 @@ type Event = Rounds & {
 
 export default function EventsPage() {
   const { businessId } = useParams();
+  const dispatch = useAppDispatch();
   const eventsQuery = useQuery({
     queryKey: ['events', businessId],
     queryFn: async () => {
@@ -37,22 +40,33 @@ export default function EventsPage() {
 
   const transactions = useMemo(() => {
     if (!eventsQuery.data) return [];
-    return eventsQuery.data
+    const transactions = eventsQuery.data
       .flatMap((round) => {
         return round.stakeholderEvents?.map((x) => ({ ...x, roundName: round.name })) ?? [];
       })
-
       .sort((a, b) => {
         const dateA = new Date(a.createdAt);
         const dateB = new Date(b.createdAt);
         return dateB.getTime() - dateA.getTime();
       });
+
+    dispatch(
+      setMultipleContext([
+        {
+          key: 'transactions',
+          contextString: `This is a list of all transactions in the company ${JSON.stringify(transactions)}`,
+          rawValue: transactions,
+        },
+      ])
+    );
+
+    return transactions;
   }, [eventsQuery.data]);
 
   const businessHistory = useMemo(() => {
     if (!eventsQuery.data) return [];
 
-    return eventsQuery.data
+    const history = eventsQuery.data
       .map((round) => {
         if (!round.businessEvents) return null;
         return { ...round.businessEvents, roundName: round.name };
@@ -63,11 +77,23 @@ export default function EventsPage() {
         const dateB = new Date(b.createdAt);
         return dateB.getTime() - dateA.getTime();
       });
+
+    dispatch(
+      setMultipleContext([
+        {
+          key: 'businessHistory',
+          contextString: `This is the business history timeline ${JSON.stringify(history)}`,
+          rawValue: history,
+        },
+      ])
+    );
+
+    return history;
   }, [eventsQuery.data]);
 
   const roundInvestmentMap = useMemo(() => {
     if (!eventsQuery.data) return {} as { [key: string]: { [key: string]: { amount: number } } };
-    return eventsQuery.data.reduce(
+    const investmentMap = eventsQuery.data.reduce(
       (acc, round) => ({
         ...acc,
         [round.id]: round.investments.reduce(
@@ -80,6 +106,18 @@ export default function EventsPage() {
       }),
       {} as { [key: string]: { [key: string]: { amount: number } } }
     );
+
+    dispatch(
+      setMultipleContext([
+        {
+          key: 'roundInvestmentMap',
+          contextString: `This is the investment map for each round ${JSON.stringify(investmentMap)}`,
+          rawValue: investmentMap,
+        },
+      ])
+    );
+
+    return investmentMap;
   }, [eventsQuery.data]);
 
   const [expandedRounds, setExpandedRounds] = useState<Record<string, boolean>>({});
