@@ -17,7 +17,7 @@ const ChatMessage = ({ message, role }: ChatMessageProps) => {
             : 'bg-pastel-blue text-gray-800 rounded-bl-none'
         )}
       >
-        <p className="text-sm">{message}</p>
+        <div className="text-sm whitespace-pre-wrap">{message}</div>
       </div>
     </div>
   );
