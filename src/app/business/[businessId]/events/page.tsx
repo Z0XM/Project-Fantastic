@@ -15,7 +15,7 @@ import { useQuery } from '@tanstack/react-query';
 import { ChevronDown, ChevronRight, CircleDollarSign, DollarSign } from 'lucide-react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { Fragment, useMemo, useState } from 'react';
+import { Fragment, useEffect, useMemo, useState } from 'react';
 
 type Event = Rounds & {
   investments: Pick<Investments, 'amount' | 'stakeholderId'>[];
@@ -40,36 +40,38 @@ export default function EventsPage() {
 
   const transactions = useMemo(() => {
     if (!eventsQuery.data) return [];
-    const transactions = eventsQuery.data
+    return eventsQuery.data
       .flatMap((round) => {
-        return round.stakeholderEvents?.map((x) => ({ ...x, roundName: round.name })) ?? [];
+        return (
+          round.stakeholderEvents?.map((x) => ({
+            ...x,
+            roundName: round.name,
+            pricePerShare: Number(x.pricePerShare ?? 0),
+          })) ?? []
+        );
       })
       .sort((a, b) => {
         const dateA = new Date(a.createdAt);
         const dateB = new Date(b.createdAt);
         return dateB.getTime() - dateA.getTime();
       });
-
-    dispatch(
-      setMultipleContext([
-        {
-          key: 'transactions',
-          contextString: `This is a list of all transactions in the company ${JSON.stringify(transactions)}`,
-          rawValue: transactions,
-        },
-      ])
-    );
-
-    return transactions;
   }, [eventsQuery.data]);
 
   const businessHistory = useMemo(() => {
     if (!eventsQuery.data) return [];
 
-    const history = eventsQuery.data
+    return eventsQuery.data
       .map((round) => {
         if (!round.businessEvents) return null;
-        return { ...round.businessEvents, roundName: round.name };
+        return {
+          ...round.businessEvents,
+          roundName: round.name,
+          preMoneyValuation: Number(round.businessEvents.preMoneyValuation ?? 0),
+          postMoneyValuation: Number(round.businessEvents.postMoneyValuation ?? 0),
+          balanceShares: Number(round.businessEvents.balanceShares ?? 0),
+          totalShares: Number(round.businessEvents.totalShares ?? 0),
+          createdAt: new Date(round.createdAt).toISOString(),
+        };
       })
       .filter((x) => x !== null)
       .sort((a, b) => {
@@ -77,23 +79,11 @@ export default function EventsPage() {
         const dateB = new Date(b.createdAt);
         return dateB.getTime() - dateA.getTime();
       });
-
-    dispatch(
-      setMultipleContext([
-        {
-          key: 'businessHistory',
-          contextString: `This is the business history timeline ${JSON.stringify(history)}`,
-          rawValue: history,
-        },
-      ])
-    );
-
-    return history;
   }, [eventsQuery.data]);
 
   const roundInvestmentMap = useMemo(() => {
     if (!eventsQuery.data) return {} as { [key: string]: { [key: string]: { amount: number } } };
-    const investmentMap = eventsQuery.data.reduce(
+    return eventsQuery.data.reduce(
       (acc, round) => ({
         ...acc,
         [round.id]: round.investments.reduce(
@@ -106,18 +96,28 @@ export default function EventsPage() {
       }),
       {} as { [key: string]: { [key: string]: { amount: number } } }
     );
+  }, [eventsQuery.data]);
 
+  useEffect(() => {
     dispatch(
       setMultipleContext([
         {
+          key: 'transactions',
+          contextString: `This is a list of all transactions in the company ${JSON.stringify(transactions)}`,
+          rawValue: transactions,
+        },
+        {
           key: 'roundInvestmentMap',
-          contextString: `This is the investment map for each round ${JSON.stringify(investmentMap)}`,
-          rawValue: investmentMap,
+          contextString: `This is the investment map for each round ${JSON.stringify(roundInvestmentMap)}`,
+          rawValue: roundInvestmentMap,
+        },
+        {
+          key: 'businessHistory',
+          contextString: `This is the business history timeline ${JSON.stringify(businessHistory)}`,
+          rawValue: businessHistory,
         },
       ])
     );
-
-    return investmentMap;
   }, [eventsQuery.data]);
 
   const [expandedRounds, setExpandedRounds] = useState<Record<string, boolean>>({});

@@ -1,6 +1,6 @@
 'use client';
 
-import { Dispatch, SetStateAction } from 'react';
+import { Dispatch, SetStateAction, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -63,36 +63,46 @@ export default function GrantExit({
     queryFn: async () => {
       const response = await fetch(`/api/business/${businessId}/info`);
       const data = await response.json();
+
+      return (data.businessInfo ?? null) as BusinessEvents | null;
+    },
+  });
+  const businessInfo = businessInfoQuery.data;
+
+  useEffect(() => {
+    if (businessInfo) {
       dispatch(
         setMultipleContext([
           {
             key: 'totalShares',
-            contextString: `${Number(businessInfo?.totalShares ?? 0)} is the total no. of shares in the company before this round`,
+            contextString: `${Number(businessInfo?.totalShares ?? 0)} is the total no. of shares in the company`,
             rawValue: Number(businessInfo?.totalShares ?? 0),
           },
           {
             key: 'balanceShares',
             contextString: `${Number(
               businessInfo?.balanceShares ?? 0
-            )} is the total no. of balance shares in the company before this round`,
+            )} is the total no. of balance shares in the company`,
             rawValue: Number(businessInfo?.balanceShares ?? 0),
           },
           {
             key: 'currentValuation',
-            contextString: `${Number(businessInfo?.postMoneyValuation ?? 0)} is the current valuation and post money valuation of the last round of the company`,
+            contextString: `${Number(
+              businessInfo?.postMoneyValuation ?? 0
+            )} is the current valuation and post money valuation of the last round of the company`,
             rawValue: Number(businessInfo?.postMoneyValuation ?? 0),
           },
           {
             key: 'preMoneyValuation',
-            contextString: `${Number(businessInfo?.preMoneyValuation ?? 0)} is the pre money valuation of the last round of the company`,
+            contextString: `${Number(
+              businessInfo?.preMoneyValuation ?? 0
+            )} is the pre money valuation of the last round of the company`,
             rawValue: Number(businessInfo?.preMoneyValuation ?? 0),
-          }
+          },
         ])
       );
-      return (data.businessInfo ?? null) as BusinessEvents | null;
-    },
-  });
-  const businessInfo = businessInfoQuery.data;
+    }
+  }, [businessInfo]);
 
   const form = useForm<z.infer<typeof formSchema>>({
     // resolver: async (data, context, options) => {

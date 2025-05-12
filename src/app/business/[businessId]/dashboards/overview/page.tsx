@@ -17,7 +17,7 @@ import {
   ChartTooltipContent,
 } from '@/components/ui/chart';
 import { Area, AreaChart, CartesianGrid, Cell, Pie, PieChart, XAxis } from 'recharts';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Switch } from '@/components/ui/switch';
 
 export default function BusinessPage() {
@@ -31,6 +31,13 @@ export default function BusinessPage() {
       const response = await fetch(`/api/business/${businessId}/info`);
       const data = await response.json();
 
+      return (data.businessInfo ?? null) as BusinessEvents | null;
+    },
+  });
+  const businessInfo = businessInfoQuery.data;
+
+  useEffect(() => {
+    if (businessInfo) {
       dispatch(
         setMultipleContext([
           {
@@ -47,21 +54,22 @@ export default function BusinessPage() {
           },
           {
             key: 'currentValuation',
-            contextString: `${Number(businessInfo?.postMoneyValuation ?? 0)} is the current valuation and post money valuation of the last round of the company`,
+            contextString: `${Number(
+              businessInfo?.postMoneyValuation ?? 0
+            )} is the current valuation and post money valuation of the last round of the company`,
             rawValue: Number(businessInfo?.postMoneyValuation ?? 0),
           },
           {
             key: 'preMoneyValuation',
-            contextString: `${Number(businessInfo?.preMoneyValuation ?? 0)} is the pre money valuation of the last round of the company`,
+            contextString: `${Number(
+              businessInfo?.preMoneyValuation ?? 0
+            )} is the pre money valuation of the last round of the company`,
             rawValue: Number(businessInfo?.preMoneyValuation ?? 0),
-          }
+          },
         ])
       );
-
-      return (data.businessInfo ?? null) as BusinessEvents | null;
-    },
-  });
-  const businessInfo = businessInfoQuery.data;
+    }
+  }, [businessInfo]);
 
   const businessEventsQuery = useQuery({
     queryKey: ['events', businessId, 'business-by-month'],

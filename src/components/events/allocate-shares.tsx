@@ -52,32 +52,7 @@ export default function AllocateShares({
     queryFn: async () => {
       const response = await fetch(`/api/business/${businessId}/info`);
       const data = await response.json();
-      dispatch(
-        setMultipleContext([
-          {
-            key: 'totalShares',
-            contextString: `${Number(businessInfo?.totalShares ?? 0)} is the total no. of shares in the company before this round`,
-            rawValue: Number(businessInfo?.totalShares ?? 0),
-          },
-          {
-            key: 'balanceShares',
-            contextString: `${Number(
-              businessInfo?.balanceShares ?? 0
-            )} is the total no. of balance shares in the company before this round`,
-            rawValue: Number(businessInfo?.balanceShares ?? 0),
-          },
-          {
-            key: 'currentValuation',
-            contextString: `${Number(businessInfo?.postMoneyValuation ?? 0)} is the current valuation and post money valuation of the last round of the company`,
-            rawValue: Number(businessInfo?.postMoneyValuation ?? 0),
-          },
-          {
-            key: 'preMoneyValuation',
-            contextString: `${Number(businessInfo?.preMoneyValuation ?? 0)} is the pre money valuation of the last round of the company`,
-            rawValue: Number(businessInfo?.preMoneyValuation ?? 0),
-          }
-        ])
-      );
+
       return (data.businessInfo ?? null) as BusinessEvents | null;
     },
   });
@@ -108,6 +83,38 @@ export default function AllocateShares({
   useEffect(() => {
     if (businessInfo) {
       form.setValue('valuation', Number(businessInfo.postMoneyValuation ?? 0));
+      dispatch(
+        setMultipleContext([
+          {
+            key: 'totalShares',
+            contextString: `${Number(
+              businessInfo?.totalShares ?? 0
+            )} is the total no. of shares in the company before this round`,
+            rawValue: Number(businessInfo?.totalShares ?? 0),
+          },
+          {
+            key: 'balanceShares',
+            contextString: `${Number(
+              businessInfo?.balanceShares ?? 0
+            )} is the total no. of balance shares in the company before this round`,
+            rawValue: Number(businessInfo?.balanceShares ?? 0),
+          },
+          {
+            key: 'currentValuation',
+            contextString: `${Number(
+              businessInfo?.postMoneyValuation ?? 0
+            )} is the current valuation and post money valuation of the last round of the company`,
+            rawValue: Number(businessInfo?.postMoneyValuation ?? 0),
+          },
+          {
+            key: 'preMoneyValuation',
+            contextString: `${Number(
+              businessInfo?.preMoneyValuation ?? 0
+            )} is the pre money valuation of the last round of the company`,
+            rawValue: Number(businessInfo?.preMoneyValuation ?? 0),
+          },
+        ])
+      );
     }
   }, [businessInfo]);
 
@@ -130,7 +137,7 @@ export default function AllocateShares({
 
   useEffect(() => {
     form.watch((value, { name, type }) => {
-      if(value.type === RoundType.NEW_SHARES) {
+      if (value.type === RoundType.NEW_SHARES) {
         dispatch(
           setMultipleContext([
             {
@@ -160,32 +167,39 @@ export default function AllocateShares({
             },
             {
               key: 'dilutionRatioAfterTheRound',
-              contextString: `Dilution ratio after the round being raised will be ${JSON.stringify(Number(businessInfo?.totalShares ?? 0) /
-                (Number(businessInfo?.totalShares ?? 0) + Number(value.addedShares ?? 0)))}`,
-              rawValue: Number(businessInfo?.totalShares ?? 0) /
+              contextString: `Dilution ratio after the round being raised will be ${JSON.stringify(
+                Number(businessInfo?.totalShares ?? 0) /
+                  (Number(businessInfo?.totalShares ?? 0) + Number(value.addedShares ?? 0))
+              )}`,
+              rawValue:
+                Number(businessInfo?.totalShares ?? 0) /
                 (Number(businessInfo?.totalShares ?? 0) + Number(value.addedShares ?? 0)),
             },
             {
               key: 'pricePerShareAfterTheRound',
-              contextString: `Price per share after the round being raised will be ${JSON.stringify(Number(value.valuation) /
-                (Number(businessInfo?.totalShares ?? 0) + Number(value.addedShares ?? 0)))}`,
-              rawValue: Number(value.valuation) /
-                (Number(businessInfo?.totalShares ?? 0) + Number(value.addedShares ?? 0)),
+              contextString: `Price per share after the round being raised will be ${JSON.stringify(
+                Number(value.valuation) / (Number(businessInfo?.totalShares ?? 0) + Number(value.addedShares ?? 0))
+              )}`,
+              rawValue:
+                Number(value.valuation) / (Number(businessInfo?.totalShares ?? 0) + Number(value.addedShares ?? 0)),
             },
             {
               key: 'totalSharesAfterTheRound',
-              contextString: `Total shares after the round being raised will be ${JSON.stringify(Number(businessInfo?.totalShares ?? 0) + Number(value.addedShares ?? 0))}`,
+              contextString: `Total shares after the round being raised will be ${JSON.stringify(
+                Number(businessInfo?.totalShares ?? 0) + Number(value.addedShares ?? 0)
+              )}`,
               rawValue: Number(businessInfo?.totalShares ?? 0) + Number(value.addedShares ?? 0),
             },
             {
               key: 'balanceSharesAfterTheRound',
-              contextString: `Balance shares after the round being raised will be ${JSON.stringify(Number(businessInfo?.totalShares ?? 0) + Number(value.addedShares ?? 0))}`,
-              rawValue: Number(businessInfo?.totalShares ?? 0) + Number(value.addedShares ?? 0)
-            }
+              contextString: `Balance shares after the round being raised will be ${JSON.stringify(
+                Number(businessInfo?.totalShares ?? 0) + Number(value.addedShares ?? 0)
+              )}`,
+              rawValue: Number(businessInfo?.totalShares ?? 0) + Number(value.addedShares ?? 0),
+            },
           ])
         );
-      }
-      else{
+      } else {
         dispatch(
           setMultipleContext([
             {
@@ -215,23 +229,28 @@ export default function AllocateShares({
             },
             {
               key: 'newSharesAfterTheRound',
-              contextString: `New shares after the round being raised will be ${JSON.stringify(Number(businessInfo?.totalShares ?? 0) * Number(value.stockSplitRatio ?? 0))}`,
+              contextString: `New shares after the round being raised will be ${JSON.stringify(
+                Number(businessInfo?.totalShares ?? 0) * Number(value.stockSplitRatio ?? 0)
+              )}`,
               rawValue: Number(businessInfo?.totalShares ?? 0) * Number(value.stockSplitRatio ?? 0),
             },
             {
               key: 'totalSharesAfterTheRound',
-              contextString: `Total shares after the round being raised will be ${JSON.stringify(Number(businessInfo?.totalShares ?? 0) * (1 + Number(value.stockSplitRatio ?? 0)))}`,
+              contextString: `Total shares after the round being raised will be ${JSON.stringify(
+                Number(businessInfo?.totalShares ?? 0) * (1 + Number(value.stockSplitRatio ?? 0))
+              )}`,
               rawValue: Number(businessInfo?.totalShares ?? 0) * (1 + Number(value.stockSplitRatio ?? 0)),
             },
             {
               key: 'balanceSharesAfterTheRound',
-              contextString: `Balance shares after the round being raised will be ${JSON.stringify(Number(businessInfo?.balanceShares ?? 0) * (1 + Number(value.stockSplitRatio ?? 0)))}`,
-              rawValue: Number(businessInfo?.balanceShares ?? 0) * (1 + Number(value.stockSplitRatio ?? 0))
-            }
+              contextString: `Balance shares after the round being raised will be ${JSON.stringify(
+                Number(businessInfo?.balanceShares ?? 0) * (1 + Number(value.stockSplitRatio ?? 0))
+              )}`,
+              rawValue: Number(businessInfo?.balanceShares ?? 0) * (1 + Number(value.stockSplitRatio ?? 0)),
+            },
           ])
         );
       }
-      
     });
   }, [form.watch]);
 
@@ -433,7 +452,12 @@ export default function AllocateShares({
                         </div>
                         <div>
                           <div className="mb-1 font-medium text-foreground text-sm">Balance Shares</div>
-                          <div className="text-md">{formatNumber(Number(businessInfo?.balanceShares ?? 0) * (1 + Number(form.watch('stockSplitRatio') ?? 0)))}</div>
+                          <div className="text-md">
+                            {formatNumber(
+                              Number(businessInfo?.balanceShares ?? 0) *
+                                (1 + Number(form.watch('stockSplitRatio') ?? 0))
+                            )}
+                          </div>
                         </div>
                       </>
                     )}

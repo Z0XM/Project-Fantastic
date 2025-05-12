@@ -9,7 +9,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useParams } from 'next/navigation';
 import { BusinessEvents, Stakeholders, StakeholderType, Users } from '@prisma/client';
 import Loading from '@/components/loading';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
@@ -30,6 +30,14 @@ export default function StakeholdersPpage() {
     queryFn: async () => {
       const response = await fetch(`/api/business/${businessId}/info`);
       const data = await response.json();
+
+      return (data.businessInfo ?? null) as BusinessEvents | null;
+    },
+  });
+  const businessInfo = businessInfoQuery.data;
+
+  useEffect(() => {
+    if (businessInfo) {
       dispatch(
         setMultipleContext([
           {
@@ -46,21 +54,22 @@ export default function StakeholdersPpage() {
           },
           {
             key: 'currentValuation',
-            contextString: `${Number(businessInfo?.postMoneyValuation ?? 0)} is the current valuation and post money valuation of the last round of the company`,
+            contextString: `${Number(
+              businessInfo?.postMoneyValuation ?? 0
+            )} is the current valuation and post money valuation of the last round of the company`,
             rawValue: Number(businessInfo?.postMoneyValuation ?? 0),
           },
           {
             key: 'preMoneyValuation',
-            contextString: `${Number(businessInfo?.preMoneyValuation ?? 0)} is the pre money valuation of the last round of the company`,
+            contextString: `${Number(
+              businessInfo?.preMoneyValuation ?? 0
+            )} is the pre money valuation of the last round of the company`,
             rawValue: Number(businessInfo?.preMoneyValuation ?? 0),
-          }
+          },
         ])
       );
-      
-      return (data.businessInfo ?? null) as BusinessEvents | null;
-    },
-  });
-  const businessInfo = businessInfoQuery.data;
+    }
+  }, [businessInfo]);
 
   const queryClient = useQueryClient();
 
